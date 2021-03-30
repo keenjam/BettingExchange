@@ -1,0 +1,146 @@
+% The document class supplies options to control rendering of some standard
+% features in the result.  The goal is for uniform style, so some attention 
+% to detail is *vital* with all fields.  Each field (i.e., text inside the
+% curly braces below, so the MEng text inside {MEng} for instance) should 
+% take into account the following:
+%
+% - author name       should be formatted as "FirstName LastName"
+%   (not "Initial LastName" for example),
+% - supervisor name   should be formatted as "Title FirstName LastName"
+%   (where Title is "Dr." or "Prof." for example),
+% - degree programme  should be "BSc", "MEng", "MSci", "MSc" or "PhD",
+% - dissertation title should be correctly capitalised (plus you can have
+%   an optional sub-title if appropriate, or leave this field blank),
+% - dissertation type should be formatted as one of the following:
+%   * for the MEng degree programme either "enterprise" or "research" to
+%     reflect the stream,
+%   * for the MSc  degree programme "$X/Y/Z$" for a project deemed to be
+%     X%, Y% and Z% of type I, II and III.
+% - year              should be formatted as a 4-digit year of submission
+%   (so 2014 rather than the accademic year, say 2013/14 say).
+%
+% Note there is a *strict* requirement for the poster to be in portrait 
+% format so that we display them on the poster boards available.
+
+\documentclass[ % the name of the author
+                    author={Daniel Page},
+                % the name of the supervisor
+                supervisor={Dr. Andrew Calway},
+                % the degree programme
+                    degree={MEng},
+                % the dissertation    title (which cannot be blank)
+                     title={Some Structural Guidelines for CS MEng Posters},
+                % the dissertation subtitle (which can    be blank)
+                  subtitle={},
+                % the dissertation     type
+                      type={enterprise},
+                % the year of submission
+                      year={2014} ]{poster}
+
+\begin{document}
+
+% -----------------------------------------------------------------------------
+
+\begin{frame}{} 
+
+\vfill
+
+\begin{columns}[t]
+  \begin{column}{0.900\linewidth}
+  \begin{block}{\Large Introduction}
+  It is hard to give generic advice about what form your poster should 
+  take, since each project relates to a different topic and each student
+  will be at a different stage wrt. completeness.  Therefore, the best 
+  approach is to focus on the underlying aim of the poster presentation:
+  essentially the intention is for you to get early, objective opinions
+  about your work and then (ideally) improve it as a result.
+
+  With this in mind, one idea is to
+
+  \begin{enumerate}
+  \item think about how to explain your project to someone, and questions
+        you might want an answer to or opinion on,
+  \item consider the poster as a set of slides, which support an elevator
+        pitch\footnote{\url{http://en.wikipedia.org/wiki/Elevator_pitch}}
+        for either the technical and/or business plan part,
+        then
+  \item focus the poster content on the part you feel you need the most
+        input on.
+  \end{enumerate}
+
+  \noindent
+  Another approach is to adopt standard advice about developing research 
+  posters\footnote{\url{http://www.ncsu.edu/project/posters/NewSite/}}, 
+  then produce a stand-alone result that summarises your project (see
+  examples on walls throughout the MVB).  Either way, the blocks below 
+  attempt to outline some potential examples of content.
+  \end{block}
+  \end{column}
+\end{columns}
+
+\vfill
+
+\begin{columns}[t]
+  \begin{column}{0.422\linewidth}
+  \begin{block}{\Large 1. Project Outline}
+  Example content could follow initial specification, and might include:
+
+  \begin{itemize}
+  \item an outline of the problem context,
+  \item a description of the central challenge, 
+  \item an overview of the direction (within the possible options) you 
+        have opted to take,
+        and
+  \item a concrete list of aims and objectives.
+  \end{itemize}
+  \end{block}
+  \end{column}
+
+  \begin{column}{0.422\linewidth}
+  \begin{block}{\Large 2. Business Plan/Research Proposal}
+  Example content might include:
+
+  \begin{itemize}
+  \item identification and analysis of a market,
+  \item proposed product/service portfolio,
+  \item ideas about development and protection of IP,
+  \item proposed company organisation,
+        and
+  \item estimates for start-up and recurrent costs.
+  \end{itemize}
+  \end{block}
+  \end{column}
+\end{columns}
+
+\vfill
+
+\begin{columns}[t]
+  \begin{column}{0.422\linewidth}
+  \begin{block}{\Large 3. Preliminary Results}
+  \vspace{10cm}
+  \end{block}
+  \end{column}
+  \begin{column}{0.422\linewidth}
+  \begin{block}{\Large 4. Progress and Status}
+  Example content might include:
+
+  \begin{itemize}
+  \item a list of complete and incomplete aims and objectives,
+  \item a list of open questions or problems,
+        and
+  \item your plan for completing the project, inc. required deliverables.
+  \end{itemize}
+  \end{block}
+  \end{column}
+\end{columns}
+
+\vfill
+
+\end{frame}
+
+% -----------------------------------------------------------------------------
+
+\end{document}
+
+
+
