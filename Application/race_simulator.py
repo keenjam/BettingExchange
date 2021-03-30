@@ -64,6 +64,12 @@ class Simulator:
 
         return comps
 
+    def updateResponsiveness(self):
+        """ Update responsiveness attribute of all competitors """
+        for c in self.competitors:
+            c.responsiveness
+
+
     def updateRaceState(self):
         """ Update race state by updating distance variable of Competitor objects """
         for c in self.competitors:
