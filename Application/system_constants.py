@@ -1,5 +1,9 @@
 # System constants used across BBE
 
+# General
+NUM_OF_COMPETITORS = 2
+NUM_OF_EXCHANGES = 1
+
 # Exchange Attributes
 MIN_ODDS = 1.00
 MAX_ODDS = 1000.00

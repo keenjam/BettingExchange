@@ -152,36 +152,46 @@ class OrderbookHalf:
 
 class Orderbook(OrderbookHalf):
 
-	def __init__(self):
+	def __init__(self, competitorId):
+		self.competitorId = competitorId
 		self.backs = OrderbookHalf('Back', MIN_ODDS)
 		self.lays = OrderbookHalf('Lay', MAX_ODDS)
 		self.tape = []
 		self.quoteId = 0  #unique ID code for each quote accepted onto the book
 
 
-
 # Exchange's internal orderbook
 
 class Exchange(Orderbook):
+	# Need to take in number of competitors and create an individual orderbook for each
+	def __init__(self, numOfCompetitors):
+		# list of unique orderbooks for all competitors
+		self.compOrderbooks = []
+		for i in range(numOfCompetitors):
+			self.compOrderbooks.append(Orderbook(i))
+
 
 	def addOrder(self, order):
 		"""
 		Add order to exchange, updating all internal records, returns order ID
 		"""
 		# add a quote/order to the exchange and update all internal records; return unique i.d.
+		# retrieve orderbook for competitor in question
+		orderbook = self.compOrderbooks[order.competitorId]
+
 		order.orderId = self.quoteId
 		self.quoteId = order.orderId + 1
 
 		if order.direction == 'Back':
-			response = self.backs.bookAddOrder(order)
-			bestOdds = self.backs.anonymisedMarket[-1][0]
-			self.backs.bestOdds = bestOdds
-			self.backs.bestAgentId = self.backs.market[bestOdds][1][0][2]
+			response = orderbook.backs.bookAddOrder(order)
+			bestOdds = orderbook.backs.anonymisedMarket[-1][0]
+			orderbook.backs.bestOdds = bestOdds
+			orderbook.backs.bestAgentId = orderbook.backs.market[bestOdds][1][0][2]
 		else:
-			response = self.lays.bookAddOrder(order)
-			bestOdds = self.lays.anonymisedMarket[0][0]
-			self.lays.bestOdds = bestOdds
-			self.lays.bestAgentId = self.lays.market[bestOdds][1][0][2]
+			response = orderbook.lays.bookAddOrder(order)
+			bestOdds = orderbook.lays.anonymisedMarket[0][0]
+			orderbook.lays.bestOdds = bestOdds
+			orderbook.lays.bestAgentId = orderbook.lays.market[bestOdds][1][0][2]
 		return [order.orderId, response]
 
 
@@ -191,27 +201,30 @@ class Exchange(Orderbook):
 		"""
 		# delete a betting agent's order from the exchange, update all internal records
 
+		# retrieve orderbook for competitor in question
+		orderbook = self.compOrderbooks[order.competitorId]
+
 		if order.direction == 'Back':
-			self.backs.bookDeleteOrder(order)
-			if self.backs.numOfOrders > 0 :
-				bestOdds = self.backs.anonymisedMarket[-1][0]
-				self.backs.bestOdds = bestOdds
-				self.backs.bestAgentId = self.backs.market[bestOdds][1][0][2]
+			orderbook.backs.bookDeleteOrder(order)
+			if orderbook.backs.numOfOrders > 0 :
+				bestOdds = orderbook.backs.anonymisedMarket[-1][0]
+				orderbook.backs.bestOdds = bestOdds
+				orderbook.backs.bestAgentId = orderbook.backs.market[bestOdds][1][0][2]
 			else: # this side of book is empty
-				self.backs.bestOdds = None
-				self.backs.bestAgentId = None
+				orderbook.backs.bestOdds = None
+				orderbook.backs.bestAgentId = None
 			cancelRecord = { 'type': 'Cancel', 'time': time, 'order': order }
 			self.tape.append(cancelRecord)
 
 		elif order.direction == 'Lay':
-			self.lays.book_del(order)
-			if self.lays.n_orders > 0 :
-				bestOdds = self.lays.anonymisedMarket[0][0]
-				self.lays.bestOdds = bestOdds
-				self.lays.bestAgentId = self.lays.market[bestOdds][1][0][2]
+			orderbook.lays.bookDeleteOrder(order)
+			if orderbook.lays.numOfOrders > 0 :
+				bestOdds = orderbook.lays.anonymisedMarket[0][0]
+				orderbook.lays.bestOdds = bestOdds
+				orderbook.lays.bestAgentId = orderbook.lays.market[bestOdds][1][0][2]
 			else: # this side of book is empty
-				self.lays.bestOdds = None
-				self.lays.bestAgentId = None
+				orderbook.lays.bestOdds = None
+				orderbook.lays.bestAgentId = None
 			cancelRecord = { 'type': 'Cancel', 'time': time, 'order': order }
 			self.tape.append(cancelRecord)
 		else:
@@ -255,6 +268,10 @@ class Exchange(Orderbook):
 		"""
 		# receive an order and either add it to the relevant market (treat as limit order)
 		# or if it crosses the best counterparty offer, execute it (treat as a market order)
+
+		# retrieve orderbook for competitor in question
+		orderbook = self.compOrderbooks[order.competitorId]
+
 		orderOdds = order.odds
 		counterparty = None
 		#counter_coid = None
@@ -263,23 +280,23 @@ class Exchange(Orderbook):
 		if EXCHANGE_VERBOSE :
 			print("Order ID: " + str(order.orderId))
 			print("Reponse is: " + response)
-		bestLay = self.lays.bestOdds
-		bestLayAgentId = self.lays.bestAgentId
-		bestBack = self.bids.bestOdds
-		bestBackAgentId = self.bids.bestAgentId
+		bestLay = orderbook.lays.bestOdds
+		bestLayAgentId = orderbook.lays.bestAgentId
+		bestBack = orderbook.bids.bestOdds
+		bestBackAgentId = orderbook.bids.bestAgentId
 		if order.direction == 'Back':
-			if self.lays.numOfOrders > 0 and bestBack >= bestLay:
+			if orderbook.lays.numOfOrders > 0 and bestBack >= bestLay:
 				# bid lifts the best ask
 				if EXCHANGE_VERBOSE: print("Back $%s lifts best lay" % orderOdds)
 				counterparty = bestLayAgentId
 				#counter_coid = self.lays.orders[counterparty].coid
 				odds = bestLay  # bid crossed ask, so use ask price
 				# delete the ask just crossed
-				self.lays.bookDeleteBest()
+				orderbook.lays.bookDeleteBest()
 				# delete the bid that was the latest order
-				self.backs.bookDeleteBest()
+				orderbook.backs.bookDeleteBest()
 		elif order.direction == 'Lay':
-			if self.bids.numOfOrders > 0 and bestLay <= bestBack:
+			if orderbook.backs.numOfOrders > 0 and bestLay <= bestBack:
 				# ask hits the best bid
 				if EXCHANGE_VERBOSE: print("Lay $%s hits best back" % orderOdds)
 				# remove the best bid
@@ -287,9 +304,9 @@ class Exchange(Orderbook):
 				#counter_coid = self.bids.orders[counterparty].coid
 				odds = bestBack  # ask crossed bid, so use bid price
 				# delete the bid just crossed, from the exchange's records
-				self.backs.bookDeleteBest()
+				orderbook.backs.bookDeleteBest()
 				# delete the ask that was the latest order, from the exchange's records
-				self.lays.bookDeleteBest()
+				orderbook.lays.bookDeleteBest()
 		else:
 			# we should never get here
 			sys.exit('processOrder given neither Back nor Lay')
