@@ -3,8 +3,10 @@
 import sys, math, threading, time, queue, random, csv, config
 from betting_agents import *
 from race_simulator import Simulator
+from exchange import Exchange
 
-
+def exchangeLogic(exchange):
+    print("EXCHANGE")
 
 def agentLogic(id):
     print("AGENT: " + str(id))
@@ -47,8 +49,8 @@ def eventSession(simulationId, numOfCompetitors, event):
     startTime = time.time()
 
     # Initialise exchange
-    #exchange = Exchange()
-    #exchangeThread = threading.Thread(target = "exchangeLogic", args = (exchange))
+    exchange = Exchange()
+    exchangeThread = threading.Thread(target = exchangeLogic, args = [exchange])
     # need order Q (use queue.Queue())
 
     # Initialise betting agents
@@ -57,7 +59,7 @@ def eventSession(simulationId, numOfCompetitors, event):
     initialiseBettingAgents(bettingAgents, bettingAgentThreads)
 
     # Start exchange thread
-    #exchangeThread.start()
+    exchangeThread.start()
     # Start betting agent threads
     for thread in bettingAgentThreads:
         thread.start()
@@ -78,10 +80,11 @@ def eventSession(simulationId, numOfCompetitors, event):
         #updateAgents(competitors, agents)
 
         for i in range(len(race.competitors)):
-            print(str(race.competitors[i]) + " : " +
-                 str(race.competitors[i].distance))
+            #print(str(race.competitors[i]) + " : " +
+                 #str(race.competitors[i].distance))
             if(race.competitors[i].distance >= race.race_attributes.length):
                winner = race.competitors[i].id
+               print("WINNER: " + str(winner))
 
     # End event and close threads
     event.clear()

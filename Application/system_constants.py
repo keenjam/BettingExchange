@@ -1,7 +1,12 @@
 # System constants used across BBE
 
+# Exchange Attributes
+MIN_ODDS = 1.00
+MAX_ODDS = 1000.00
+
 # Print-Outs
 SIM_VERBOSE = True
+EXCHANGE_VERBOSE = True
 
 # Event Attributes
 MIN_RACE_LENGTH = 1000
