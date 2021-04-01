@@ -10,41 +10,61 @@ def exchangeLogic(exchange, exchangeOrderQ, bettingAgentQs, event, startTime, nu
     """
     Logic for thread running the exchange
     """
-    print("EXCHANGE INTIALISED...")
+    print("EXCHANGE " + str(exchange.id) + " INITIALISED...")
 
     event.wait()
     # While event is running, run logic for exchange
     while event.isSet():
         timeInEvent = (time.time() - startTime) * numberOfTimesteps
 
-        order = exchangeOrderQ.get()
-        (trade, market) = exchange.processOrder(timeInEvent, order)
+        try: order = exchangeOrderQ.get(block=False)
+        except: continue
+
+        (trade, markets) = exchange.processOrder(timeInEvent, order)
 
         if trade != None:
-            for q in bettingAgentQs:
+            for id, q in bettingAgentQs.items():
                 # COULD BE MODIFIED TO BE A SPECIAL UPDATE-MESSAGE CLASS (protocol)
-                q.put([trade, order, marker])
+                q.put([trade, order, markets])
+
+    print("CLOSING EXCHANGE " + str(exchange.id))
+
+    return 0
 
 
-def agentLogic(agent, agentQ, exchanges, event, startTime, numberOfTimesteps):
+def agentLogic(agent, agentQ, exchanges, exchangeOrderQs, event, startTime, numberOfTimesteps):
     """
     Logic for betting agent threads
     """
-    print("AGENT: " + str(agent.id))
+    print("AGENT " + str(agent.id) + " INITIALISED...")
     # Need to have pre-event betting period
     event.wait()
     # Whole event is running, run logic for betting agents
     while event.isSet():
         timeInEvent = (time.time() - startTime) * numberOfTimesteps
+        order = None
+        trade = None
 
         while agentQ.empty() is False:
             [trade, order, market] = agentQ.get(block = False)
             if trade['party1'] == agent.id: agent.bookkeep(trade, order, timeInEvent)
             if trade['party2'] == agent.id: agent.bookkeep(trade, order, timeInEvent)
 
-    
+        marketUpdates = {}
+        for i in range(NUM_OF_EXCHANGES):
+            marketUpdates[i] = exchanges[i].publishMarketState(timeInEvent)
 
+        agent.respond(timeInEvent, marketUpdates, trade)
+        order = agent.getorder(timeInEvent, marketUpdates)
+        #print("ORDER: " + str(order))
 
+        if order != None:
+            print(order)
+            agent.numOfBets = agent.numOfBets + 1
+            exchangeOrderQs[order.exchange].put(order)
+
+    print("ENDING AGENT " + str(agent.id))
+    return 0
 
 def populateMarket(bettingAgents):
     """
@@ -59,15 +79,6 @@ def populateMarket(bettingAgents):
         for i in range(agent[1]):
             bettingAgents[id] = initAgent(agent[0], agent[1], id)
             id = id + 1
-
-def initialiseExchanges(exchanges, exchangeQs, NUM_OF_COMPETITORS):
-    """
-    Initialise exchanges, returns list of exchange objects
-    """
-    for i in range(NUM_OF_EXCHANGES):
-        exchanges[i] = Exchange(NUM_OF_COMPETITORS) # NUM_OF_COMPETITORS may be changed to list of competitor objects that are participating
-        exchangeQs[i] = queue.Queue()
-
 
 def populateMarket(bettingAgents):
     """
@@ -88,10 +99,10 @@ def initialiseExchanges(exchanges, exchangeOrderQs):
     Initialise exchanges, returns list of exchange objects
     """
     for i in range(NUM_OF_EXCHANGES):
-        exchanges[i] = Exchange(NUM_OF_COMPETITORS) # NUM_OF_COMPETITORS may be changed to list of competitor objects that are participating
+        exchanges[i] = Exchange(i, NUM_OF_COMPETITORS) # NUM_OF_COMPETITORS may be changed to list of competitor objects that are participating
         exchangeOrderQs[i] = queue.Queue()
 
-def initialiseBettingAgents(bettingAgents, bettingAgentQs, bettingAgentThreads, exchanges, startTime, numberOfTimesteps, event):
+def initialiseBettingAgents(bettingAgents, bettingAgentQs, bettingAgentThreads, exchanges, exchangeOrderQs, startTime, numberOfTimesteps, event):
     """
     Initialise betting agents
     """
@@ -100,7 +111,7 @@ def initialiseBettingAgents(bettingAgents, bettingAgentQs, bettingAgentThreads, 
     # has started
     for id, agent in bettingAgents.items():
         bettingAgentQs[id] = queue.Queue()
-        thread = threading.Thread(target = agentLogic, args = [agent, bettingAgentQs[id], exchanges, event, startTime, numberOfTimesteps])
+        thread = threading.Thread(target = agentLogic, args = [agent, bettingAgentQs[id], exchanges, exchangeOrderQs, event, startTime, numberOfTimesteps])
         bettingAgentThreads.append(thread)
 
 
@@ -126,7 +137,7 @@ def eventSession(simulationId, event):
     bettingAgents = {}
     bettingAgentQs = {}
     bettingAgentThreads = []
-    initialiseBettingAgents(bettingAgents, bettingAgentQs, bettingAgentThreads, exchanges, startTime, numberOfTimesteps, event)
+    initialiseBettingAgents(bettingAgents, bettingAgentQs, bettingAgentThreads, exchanges, exchangeOrderQs, startTime, numberOfTimesteps, event)
 
     # Start exchange threads
     for id, exchange in exchanges.items():
@@ -159,14 +170,17 @@ def eventSession(simulationId, event):
                winner = race.competitors[i].id
                print("WINNER: " + str(winner))
 
-    # End event and close threads
+        time.sleep(0.01)
+
+    # End event
     event.clear()
-    #exchangeThread.join()
-    for thread in bettingAgentThreads:
-        thread.join()
+    # Give time for threads to register end of event
+    #time.sleep(1)
+    # Close threads
+    for thread in exchangeThreads: thread.join()
+    for thread in bettingAgentThreads: thread.join()
 
-
-
+    print("Simulation complete")
 
 
 def main():

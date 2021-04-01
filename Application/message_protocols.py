@@ -14,11 +14,11 @@ class Order:
         self.odds = odds
         self.stake = stake
         self.orderId = orderId
-        self.timestamp = time
+        self.timestamp = timestamp
 
     def __str__(self):
         return ("Order: [Agent ID: " + str(self.agentId) +
                 " Betting on competitor: " + str(self.competitorId) +
                 " Direction: " + str(self.direction) + " Odds: " +
                 str(self.odds) + " Stake: " + str(self.stake) + " Order ID: " +
-                str(self.orderId) + " Timestamp: " + self.timestamp + "]")
+                str(self.orderId) + " Timestamp: " + str(self.timestamp) + "]")

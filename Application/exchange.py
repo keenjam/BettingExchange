@@ -1,7 +1,7 @@
 ### ~ THREADED BRISTOL BETTING EXCHANGE ~ ###
 
 import sys, config
-from system_constants import MIN_ODDS, MAX_ODDS
+from system_constants import EXCHANGE_VERBOSE, MIN_ODDS, MAX_ODDS
 from betting_agents import *
 from race_simulator import Simulator
 from message_protocols import Order
@@ -32,7 +32,7 @@ class OrderbookHalf:
 		# anonymise the market, strip out order details, format as a sorted list
 		# NB for lays, the sorting should be reversed
 		self.anonymisedMarket = []
-		for price in list(sorted(self.market)):
+		for odds in list(sorted(self.market)):
 			stake = self.market[odds][0]
 			self.anonymisedMarket.append([odds, stake])
 
@@ -47,14 +47,14 @@ class OrderbookHalf:
 		# also builds anonymized version (just price/quantity, sorted, as a list) for publishing to betting agents
 		self.market = {}
 
-		for order in list(self.orders):
+		for key, order in self.orders.items():
 			odds = order.odds
 			if odds in self.market:
 				# update existing entry
 				stake = self.market[odds][0]
-				orderList = self.lob[odds][1]
+				orderList = self.market[odds][1]
 				orderList.append([order.timestamp, order.stake, order.agentId, order.orderId])
-				self.market[odds] = [stake + order.stake, orderlist]
+				self.market[odds] = [stake + order.stake, orderList]
 			else:
 				# create a new dictionary entry
 				self.market[odds] = [order.stake, [[order.timestamp, order.stake, order.agentId, order.orderId]]]
@@ -85,12 +85,12 @@ class OrderbookHalf:
 		# so, max of one order per trader per list
 		# checks whether length or order list has changed, to distinguish addition/overwrite
 
-		n_orders = self.numOfOrders
+		numOfOrdersBefore = self.numOfOrders
 		self.orders[order.agentId] = order
 		self.numOfOrders = len(self.orders)
 		self.buildMarket()
 
-		if numOfOrders != self.numOfOrders :
+		if numOfOrdersBefore != self.numOfOrders :
 			return('Addition')
 		else:
 			return('Overwrite')
@@ -164,7 +164,8 @@ class Orderbook(OrderbookHalf):
 
 class Exchange(Orderbook):
 	# Need to take in number of competitors and create an individual orderbook for each
-	def __init__(self, numOfCompetitors):
+	def __init__(self, id, numOfCompetitors):
+		self.id = id
 		# list of unique orderbooks for all competitors
 		self.compOrderbooks = []
 		for i in range(numOfCompetitors):
@@ -179,8 +180,8 @@ class Exchange(Orderbook):
 		# retrieve orderbook for competitor in question
 		orderbook = self.compOrderbooks[order.competitorId]
 
-		order.orderId = self.quoteId
-		self.quoteId = order.orderId + 1
+		order.orderId = orderbook.quoteId
+		orderbook.quoteId = order.orderId + 1
 
 		if order.direction == 'Back':
 			response = orderbook.backs.bookAddOrder(order)
@@ -214,7 +215,7 @@ class Exchange(Orderbook):
 				orderbook.backs.bestOdds = None
 				orderbook.backs.bestAgentId = None
 			cancelRecord = { 'type': 'Cancel', 'time': time, 'order': order }
-			self.tape.append(cancelRecord)
+			orderbook.tape.append(cancelRecord)
 
 		elif order.direction == 'Lay':
 			orderbook.lays.bookDeleteOrder(order)
@@ -226,7 +227,7 @@ class Exchange(Orderbook):
 				orderbook.lays.bestOdds = None
 				orderbook.lays.bestAgentId = None
 			cancelRecord = { 'type': 'Cancel', 'time': time, 'order': order }
-			self.tape.append(cancelRecord)
+			orderbook.tape.append(cancelRecord)
 		else:
 			# neither back nor lay?
 			sys.exit('bad order type in delOrder')
@@ -238,25 +239,28 @@ class Exchange(Orderbook):
 		Publish market state to betting agents, returns dictionary of best,
 		worst, number and anonymised market state
 		"""
-		publicData = {}
-		publicData['time'] = time
-		publicData['backs'] = {'best':self.bids.bestOdds,
-								'worst':self.bids.worstprice,
-								'n': self.bids.numOfOrders,
-								'market':self.bids.anonymisedMarket}
-		publicData['lays'] = {'best':self.lays.bestOdds,
-								'worst':self.lays.worstprice,
-								'n': self.lays.numOfOrders,
-								'market':self.lays.anonymisedMarket}
-		publicData['QID'] = self.quoteId
-		publicData['tape'] = self.tape
+		competitorsMarkets = {}
+		for book in self.compOrderbooks:
+			publicData = {}
+			publicData['time'] = time
+			publicData['backs'] = {'best':book.backs.bestOdds,
+									'worst':book.backs.worstOdds,
+									'n': book.backs.numOfOrders,
+									'market':book.backs.anonymisedMarket}
+			publicData['lays'] = {'best':book.lays.bestOdds,
+									'worst':book.lays.worstOdds,
+									'n': book.lays.numOfOrders,
+									'market':book.lays.anonymisedMarket}
+			publicData['QID'] = book.quoteId
+			publicData['tape'] = book.tape
+			competitorsMarkets[book.competitorId] = publicData
 
-		if EXCHANGE_VERBOSE:
-			print("Market Published at timestamp: " + str(time) + " - BACKS[" +
-			str(publicData['backs']['market']) + "] LAYS[" +
-			str(publicData['lays']['market']) + "]")
+		# if EXCHANGE_VERBOSE:
+		# 	print("Market Published at timestamp: " + str(time) + " - BACKS[" +
+		# 	str(publicData['backs']['market']) + "] LAYS[" +
+		# 	str(publicData['lays']['market']) + "]")
 
-		return publicData
+		return competitorsMarkets
 
 
 
@@ -282,8 +286,8 @@ class Exchange(Orderbook):
 			print("Reponse is: " + response)
 		bestLay = orderbook.lays.bestOdds
 		bestLayAgentId = orderbook.lays.bestAgentId
-		bestBack = orderbook.bids.bestOdds
-		bestBackAgentId = orderbook.bids.bestAgentId
+		bestBack = orderbook.backs.bestOdds
+		bestBackAgentId = orderbook.backs.bestAgentId
 		if order.direction == 'Back':
 			if orderbook.lays.numOfOrders > 0 and bestBack >= bestLay:
 				# bid lifts the best ask
@@ -314,7 +318,7 @@ class Exchange(Orderbook):
 		# but the two traders concerned still have to be notified
 		if EXCHANGE_VERBOSE: print("Counterparty: " + str(counterparty))
 
-		market = self.publishMarketState(time)
+		markets = self.publishMarketState(time)
 		if counterparty != None:
 			# process the trade
 			if EXCHANGE_VERBOSE:
@@ -324,6 +328,8 @@ class Exchange(Orderbook):
 
 			transactionRecord = { 'type': 'Trade',
 									'time': time,
+									'exchange': order.exchange,
+									'competitor': order.competitorId,
 									'odds': odds,
 									'party1':counterparty,
 									'party2':order.agentId,
@@ -331,12 +337,12 @@ class Exchange(Orderbook):
 									# 'coid': order.coid,
 									# 'counter': counter_coid
 									}
-			self.tape.append(transactionRecord)
+			orderbook.tape.append(transactionRecord)
 
-			return (transactionRecord, market)
+			return (transactionRecord, markets)
 
 		else:
-			return (None, market)
+			return (None, markets)
 
 
 
