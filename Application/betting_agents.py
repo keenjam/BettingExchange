@@ -12,6 +12,7 @@ class BettingAgent:
         self.numOfBets = 0 # Number of bets live on BBE
 
     def bookkeep(self, trade, order, time):
+        self.numOfBets = self.numOfBets - 1
         return None
 
     def respond(self, time, markets, trade):

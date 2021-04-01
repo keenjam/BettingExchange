@@ -47,8 +47,8 @@ def agentLogic(agent, agentQ, exchanges, exchangeOrderQs, event, startTime, numb
 
         while agentQ.empty() is False:
             [trade, order, market] = agentQ.get(block = False)
-            if trade['party1'] == agent.id: agent.bookkeep(trade, order, timeInEvent)
-            if trade['party2'] == agent.id: agent.bookkeep(trade, order, timeInEvent)
+            if trade['backer'] == agent.id: agent.bookkeep(trade, order, timeInEvent)
+            if trade['layer'] == agent.id: agent.bookkeep(trade, order, timeInEvent)
 
         marketUpdates = {}
         for i in range(NUM_OF_EXCHANGES):
@@ -181,6 +181,10 @@ def eventSession(simulationId, event):
     for thread in bettingAgentThreads: thread.join()
 
     print("Simulation complete")
+
+    print("Writing data....")
+    for id, exchange in exchanges.items():
+        exchange.tapeDump('transactions.csv', 'a', 'keep')
 
 
 def main():

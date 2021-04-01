@@ -1,7 +1,7 @@
 ### ~ THREADED BRISTOL BETTING EXCHANGE ~ ###
 
 import sys, config
-from system_constants import EXCHANGE_VERBOSE, MIN_ODDS, MAX_ODDS
+from system_constants import EXCHANGE_VERBOSE, MIN_ODDS, MAX_ODDS, NUM_OF_COMPETITORS
 from betting_agents import *
 from race_simulator import Simulator
 from message_protocols import Order
@@ -326,13 +326,20 @@ class Exchange(Orderbook):
 				str(odds) + " as a: " + str(order.direction) + " FROM: " +
 				str(order.agentId) + ", WITH: " + str(counterparty))
 
+			if order.direction == 'Back':
+				backer = order.agentId
+				layer = counterparty
+			else:
+				backer = counterparty
+				layer = order.agentId
+
 			transactionRecord = { 'type': 'Trade',
 									'time': time,
 									'exchange': order.exchange,
 									'competitor': order.competitorId,
 									'odds': odds,
-									'party1':counterparty,
-									'party2':order.agentId,
+									'backer':backer,
+									'layer':layer,
 									'stake': order.stake
 									# 'coid': order.coid,
 									# 'counter': counter_coid
@@ -346,11 +353,13 @@ class Exchange(Orderbook):
 
 
 
-	def tape_dump(self, fname, fmode, tmode):
+	def tapeDump(self, fname, fmode, tmode):
 		dumpfile = open(fname, fmode)
-		for tapeitem in self.tape:
-			if tapeitem['type'] == 'Trade' :
-				dumpfile.write('%s, %s\n' % (tapeitem['time'], tapeitem['odds']))
-		dumpfile.close()
-		if tmode == 'wipe':
-			self.tape = []
+		for id in range(NUM_OF_COMPETITORS):
+			orderbook = self.compOrderbooks[id]
+			for tapeitem in orderbook.tape:
+				if tapeitem['type'] == 'Trade' :
+					dumpfile.write('%s, %s\n' % (tapeitem['time'], tapeitem['odds']))
+			dumpfile.close()
+			if tmode == 'wipe':
+				orderbook.tape = []
