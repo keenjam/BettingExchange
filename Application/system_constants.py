@@ -4,13 +4,21 @@
 NUM_OF_COMPETITORS = 2
 NUM_OF_EXCHANGES = 1
 
+# Data Store Attributes
+RACE_DATA_FILENAME = 'race_event_core.csv'
+
+# Message Protocol Numbers
+EXCHANGE_UPDATE_MSG_NUM = 1
+RACE_UPDATE_MSG_NUM = 2
+
 # Exchange Attributes
 MIN_ODDS = 1.00
 MAX_ODDS = 1000.00
 
 # Print-Outs
+TBBE_VERBOSE = False
 SIM_VERBOSE = True
-EXCHANGE_VERBOSE = True
+EXCHANGE_VERBOSE = False
 
 # Event Attributes
 MIN_RACE_LENGTH = 1000

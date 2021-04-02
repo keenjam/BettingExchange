@@ -11,6 +11,12 @@ class BettingAgent:
         self.orders = {}
         self.numOfBets = 0 # Number of bets live on BBE
 
+    def observeRaceState(self, timestep, compDistances):
+        print(str(self.id) + " observed race with")
+        print(compDistances)
+        return None
+
+
     def bookkeep(self, trade, order, time):
         self.numOfBets = self.numOfBets - 1
         return None

@@ -2,6 +2,8 @@
 
 # Message protocols for information transfer between Exchange and Betting Agents
 
+from system_constants import *
+
 class Order:
     """
     Protocol for issuing a new order, from betting agent to exchange
@@ -22,3 +24,22 @@ class Order:
                 " Direction: " + str(self.direction) + " Odds: " +
                 str(self.odds) + " Stake: " + str(self.stake) + " Order ID: " +
                 str(self.orderId) + " Timestamp: " + str(self.timestamp) + "]")
+
+class exchangeUpdate:
+    """
+    Protocol for transfer of trade information between exchange and betting agents
+    """
+    def __init__(self, trade, order, markets):
+        self.protocolNum = EXCHANGE_UPDATE_MSG_NUM
+        self.trade = trade
+        self.order = order
+        self.markets = markets
+
+class raceUpdate:
+    """
+    Protocol for transfer of new race information to betting agents
+    """
+    def __init__(self, timestep, competitorDistances):
+        self.protocolNum = RACE_UPDATE_MSG_NUM
+        self.timestep = timestep
+        self.compDistances = competitorDistances

@@ -255,10 +255,10 @@ class Exchange(Orderbook):
 			publicData['tape'] = book.tape
 			competitorsMarkets[book.competitorId] = publicData
 
-		# if EXCHANGE_VERBOSE:
-		# 	print("Market Published at timestamp: " + str(time) + " - BACKS[" +
-		# 	str(publicData['backs']['market']) + "] LAYS[" +
-		# 	str(publicData['lays']['market']) + "]")
+			# if EXCHANGE_VERBOSE:
+			# 	print("Market Published at timestamp: " + str(time) + " - BACKS[" +
+			# 	str(publicData['backs']['market']) + "] LAYS[" +
+			# 	str(publicData['lays']['market']) + "]")
 
 		return competitorsMarkets
 
@@ -341,8 +341,6 @@ class Exchange(Orderbook):
 									'backer':backer,
 									'layer':layer,
 									'stake': order.stake
-									# 'coid': order.coid,
-									# 'counter': counter_coid
 									}
 			orderbook.tape.append(transactionRecord)
 

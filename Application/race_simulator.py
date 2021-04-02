@@ -8,7 +8,7 @@
 # then do check within BBE of size of pool,
 # if size is one then that competitor has won
 
-import random
+import random, csv, pandas, time
 from statistics import mean
 from system_constants import *
 from competitor import Competitor
@@ -48,6 +48,11 @@ class Simulator:
         if SIM_VERBOSE: self.printInitialConditions()
         self.competitors = self.createCompetitors(numOfCompetitors)
         if SIM_VERBOSE: self.printCompPool()
+        self.raceData = []
+
+        # Race state details
+        self.winner = None
+        self.finished = []
 
     ### CLASS FUNCTIONS BELOW ###
 
@@ -74,10 +79,47 @@ class Simulator:
         """ Update race state by updating distance variable of Competitor objects """
         for c in self.competitors:
             c.distance = c.distance + c.responsiveness * (c.alignment * random.randint(c.speed[0], c.speed[1]))
+            if c.distance >= self.race_attributes.length:
+                if self.winner == None: self.winner = c.id
+                self.finished.append(c.id)
+
+        self.time_lapsed = time.time() - self.time_lapsed
+
+    def saveRaceState(self, timestamp):
+        row = []
+        row.append(timestamp)
+        for c in self.competitors:
+            row.append(c.distance)
+
+        self.raceData.append(row)
+
+    def run(self):
+        """ Run and manage race simulation """
+        timestamp = 0
+        self.saveRaceState(timestamp)
+        while len(self.finished) < NUM_OF_COMPETITORS:
+            timestamp = timestamp + 1
+            self.updateRaceState()
+            self.saveRaceState(timestamp)
+
+
+        self.numberOfTimesteps = len(self.raceData)
+
+        self.writeToFile("core")
 
 
 
+    # Write race state to file
+    def writeToFile(self, name):
+        header = ["Time"]
+        for c in self.competitors:
+            header.append(str(c.id))
 
+        fileName = "race_event_" + str(name) + ".csv"
+        with open(fileName, 'w', newline = '') as file:
+            writer = csv.writer(file)
+            writer.writerow(header)
+            writer.writerows(self.raceData)
 
 
 

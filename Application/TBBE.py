@@ -1,10 +1,11 @@
 ### ~ THREADED BRISTOL BETTING EXCHANGE ~ ###
 
 import sys, math, threading, time, queue, random, csv, config
-from system_constants import NUM_OF_EXCHANGES, NUM_OF_COMPETITORS
+from system_constants import *
 from betting_agents import *
 from race_simulator import Simulator
 from exchange import Exchange
+from message_protocols import *
 
 def exchangeLogic(exchange, exchangeOrderQ, bettingAgentQs, event, startTime, numberOfTimesteps):
     """
@@ -24,8 +25,8 @@ def exchangeLogic(exchange, exchangeOrderQ, bettingAgentQs, event, startTime, nu
 
         if trade != None:
             for id, q in bettingAgentQs.items():
-                # COULD BE MODIFIED TO BE A SPECIAL UPDATE-MESSAGE CLASS (protocol)
-                q.put([trade, order, markets])
+                update = exchangeUpdate(trade, order, markets)
+                q.put(update)
 
     print("CLOSING EXCHANGE " + str(exchange.id))
 
@@ -46,9 +47,15 @@ def agentLogic(agent, agentQ, exchanges, exchangeOrderQs, event, startTime, numb
         trade = None
 
         while agentQ.empty() is False:
-            [trade, order, market] = agentQ.get(block = False)
-            if trade['backer'] == agent.id: agent.bookkeep(trade, order, timeInEvent)
-            if trade['layer'] == agent.id: agent.bookkeep(trade, order, timeInEvent)
+            qItem = agentQ.get(block = False)
+            if qItem.protocolNum == EXCHANGE_UPDATE_MSG_NUM:
+                # Q item is an exchange update
+                if qItem.trade['backer'] == agent.id: agent.bookkeep(qItem.trade, qItem.order, timeInEvent)
+                if qItem.trade['layer'] == agent.id: agent.bookkeep(qItem.trade, qItem.order, timeInEvent)
+            elif qItem.protocolNum == RACE_UPDATE_MSG_NUM:
+                agent.observeRaceState(qItem.timestep, qItem.compDistances)
+            else:
+                print("INVALID MESSAGE")
 
         marketUpdates = {}
         for i in range(NUM_OF_EXCHANGES):
@@ -59,7 +66,7 @@ def agentLogic(agent, agentQ, exchanges, exchangeOrderQs, event, startTime, numb
         #print("ORDER: " + str(order))
 
         if order != None:
-            print(order)
+            if TBBE_VERBOSE: print(order)
             agent.numOfBets = agent.numOfBets + 1
             exchangeOrderQs[order.exchange].put(order)
 
@@ -114,15 +121,33 @@ def initialiseBettingAgents(bettingAgents, bettingAgentQs, bettingAgentThreads, 
         thread = threading.Thread(target = agentLogic, args = [agent, bettingAgentQs[id], exchanges, exchangeOrderQs, event, startTime, numberOfTimesteps])
         bettingAgentThreads.append(thread)
 
+def updateRaceQ(bettingAgentQs, timestep):
+    """
+    Read in race data and update agent queues with competitor distances at timestep
+    """
+    with open(RACE_DATA_FILENAME, 'r') as file:
+        reader = csv.reader(file)
+        r = [row for index, row in enumerate(reader) if index == timestep]
+    time = r[0][0]
+    compDistances = {}
+    for c in range(NUM_OF_COMPETITORS):
+        compDistances[c] = r[0][c+1]
 
-def eventSession(simulationId, event):
+    # Create update
+    update = raceUpdate(time, compDistances)
+
+    for id, q in bettingAgentQs.items():
+        q.put(update)
+
+
+def eventSession(simulationId, event, numberOfTimesteps):
     """
     Set up and management of race event
     """
 
-    race = Simulator(NUM_OF_COMPETITORS)
-    numberOfTimesteps = race.race_attributes.length
-    winner = "NA"
+    # race = Simulator(NUM_OF_COMPETITORS)
+
+    # winner = "NA"
 
     # Timestamp
     startTime = time.time()
@@ -150,27 +175,36 @@ def eventSession(simulationId, event):
     # Start betting agent threads
     for thread in bettingAgentThreads:
         thread.start()
-    # Initiate event
+
+    # Initialise event
     event.set()
 
     # round of betting
     #bet(competitors, agents)
 
     # have loop which runs until competitor has won race
-    while(winner == "NA"):
+    i = 0
+    while(i < numberOfTimesteps):
+        updateRaceQ(bettingAgentQs, i+1)
+
+
+        i = i+1
         # run simulation
-        race.updateRaceState()
+        #race.updateRaceState()
+        #race.saveRaceState(0)
+
         # call update function of every betting agent
         #updateAgents(competitors, agents)
 
-        for i in range(len(race.competitors)):
-            #print(str(race.competitors[i]) + " : " +
-                 #str(race.competitors[i].distance))
-            if(race.competitors[i].distance >= race.race_attributes.length):
-               winner = race.competitors[i].id
-               print("WINNER: " + str(winner))
+        # for i in range(len(race.competitors)):
+        #     #print(str(race.competitors[i]) + " : " +
+        #          #str(race.competitors[i].distance))
+        #     if(race.competitors[i].distance >= race.race_attributes.length):
+        #        winner = race.competitors[i].id
+        #        print("WINNER: " + str(winner))
 
         time.sleep(0.01)
+
 
     # End event
     event.clear()
@@ -183,6 +217,7 @@ def eventSession(simulationId, event):
     print("Simulation complete")
 
     print("Writing data....")
+
     for id, exchange in exchanges.items():
         exchange.tapeDump('transactions.csv', 'a', 'keep')
 
@@ -200,9 +235,15 @@ def main():
     while currentSimulation < numOfSimulations:
         simulationId = "Simulation: " + str(currentSimulation)
 
+        # Create race event data
+        race = Simulator(NUM_OF_COMPETITORS)
+        race.run()
+        numberOfTimesteps = race.numberOfTimesteps
+        winningCompetitor = race.winner
+
         # Start up thread for race on which all other threads will wait
         event = threading.Event()
-        eventSession(simulationId, event)
+        eventSession(simulationId, event, numberOfTimesteps)
 
         currentSimulation = currentSimulation + 1
 
