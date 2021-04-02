@@ -29,7 +29,6 @@ def exchangeLogic(exchange, exchangeOrderQ, bettingAgentQs, event, startTime, nu
                 q.put(update)
 
     print("CLOSING EXCHANGE " + str(exchange.id))
-
     return 0
 
 
@@ -49,7 +48,6 @@ def agentLogic(agent, agentQ, exchanges, exchangeOrderQs, event, startTime, numb
         while agentQ.empty() is False:
             qItem = agentQ.get(block = False)
             if qItem.protocolNum == EXCHANGE_UPDATE_MSG_NUM:
-                # Q item is an exchange update
                 if qItem.trade['backer'] == agent.id: agent.bookkeep(qItem.trade, qItem.order, timeInEvent)
                 if qItem.trade['layer'] == agent.id: agent.bookkeep(qItem.trade, qItem.order, timeInEvent)
             elif qItem.protocolNum == RACE_UPDATE_MSG_NUM:
@@ -144,11 +142,6 @@ def eventSession(simulationId, event, numberOfTimesteps, winningCompetitor):
     """
     Set up and management of race event
     """
-
-    # race = Simulator(NUM_OF_COMPETITORS)
-
-    # winner = "NA"
-
     # Timestamp
     startTime = time.time()
 
@@ -186,8 +179,6 @@ def eventSession(simulationId, event, numberOfTimesteps, winningCompetitor):
     i = 0
     while(i < numberOfTimesteps):
         updateRaceQ(bettingAgentQs, i+1)
-
-
         i = i+1
         # run simulation
         #race.updateRaceState()
@@ -208,8 +199,7 @@ def eventSession(simulationId, event, numberOfTimesteps, winningCompetitor):
 
     # End event
     event.clear()
-    # Give time for threads to register end of event
-    #time.sleep(1)
+
     # Close threads
     for thread in exchangeThreads: thread.join()
     for thread in bettingAgentThreads: thread.join()
@@ -222,6 +212,7 @@ def eventSession(simulationId, event, numberOfTimesteps, winningCompetitor):
             for trade in orderbook.tape:
                 print(trade)
 
+    # Settle up all transactions over all exchanges
     for id, ex in exchanges.items():
         ex.settleUp(bettingAgents, winningCompetitor)
 

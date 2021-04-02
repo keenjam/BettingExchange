@@ -350,7 +350,7 @@ class Exchange(Orderbook):
 			return (None, markets)
 
 
-	def settleUp(self, bettingAgents, winner):
+	def settleUp(self, bettingAgents, winningCompetitor):
 		"""
 		Settle up bets between betting agents at end of event, updates agent's
 		balances
@@ -361,10 +361,13 @@ class Exchange(Orderbook):
 				layer = bettingAgents[trade['layer']]
 				odds = trade['odds']
 				stake = trade['stake']
-				if orderbook.competitorId == winner:
+				if orderbook.competitorId == winningCompetitor:
 					backer.balance = backer.balance + (odds * stake)
+					layer.balance = layer.balance - (odds * stake)
 				else:
 					layer.balance = layer.balance + (odds * stake)
+					backer.balance = backer.balance - (odds * stake)
+
 
 
 
