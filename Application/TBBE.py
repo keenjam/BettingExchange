@@ -140,7 +140,7 @@ def updateRaceQ(bettingAgentQs, timestep):
         q.put(update)
 
 
-def eventSession(simulationId, event, numberOfTimesteps):
+def eventSession(simulationId, event, numberOfTimesteps, winningCompetitor):
     """
     Set up and management of race event
     """
@@ -217,9 +217,19 @@ def eventSession(simulationId, event, numberOfTimesteps):
     print("Simulation complete")
 
     print("Writing data....")
+    for id, ex in exchanges.items():
+        for orderbook in ex.compOrderbooks:
+            for trade in orderbook.tape:
+                print(trade)
+
+    for id, ex in exchanges.items():
+        ex.settleUp(bettingAgents, winningCompetitor)
 
     for id, exchange in exchanges.items():
         exchange.tapeDump('transactions.csv', 'a', 'keep')
+
+    for id, agent in bettingAgents.items():
+        print("Agent " + str(id) + "\'s final balance: " + str(agent.balance))
 
 
 def main():
@@ -243,7 +253,7 @@ def main():
 
         # Start up thread for race on which all other threads will wait
         event = threading.Event()
-        eventSession(simulationId, event, numberOfTimesteps)
+        eventSession(simulationId, event, numberOfTimesteps, winningCompetitor)
 
         currentSimulation = currentSimulation + 1
 

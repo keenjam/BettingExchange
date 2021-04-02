@@ -2,6 +2,7 @@
 
 import sys, math, threading, time, queue, random, csv, config
 from message_protocols import Order
+from system_constants import *
 
 class BettingAgent:
     def __init__(self, id, name):
@@ -15,7 +16,6 @@ class BettingAgent:
         print(str(self.id) + " observed race with")
         print(compDistances)
         return None
-
 
     def bookkeep(self, trade, order, time):
         self.numOfBets = self.numOfBets - 1

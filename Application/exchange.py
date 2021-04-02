@@ -350,6 +350,24 @@ class Exchange(Orderbook):
 			return (None, markets)
 
 
+	def settleUp(self, bettingAgents, winner):
+		"""
+		Settle up bets between betting agents at end of event, updates agent's
+		balances
+		"""
+		for orderbook in self.compOrderbooks:
+			for trade in orderbook.tape:
+				backer = bettingAgents[trade['backer']]
+				layer = bettingAgents[trade['layer']]
+				odds = trade['odds']
+				stake = trade['stake']
+				if orderbook.competitorId == winner:
+					backer.balance = backer.balance + (odds * stake)
+				else:
+					layer.balance = layer.balance + (odds * stake)
+
+
+
 
 	def tapeDump(self, fname, fmode, tmode):
 		dumpfile = open(fname, fmode)

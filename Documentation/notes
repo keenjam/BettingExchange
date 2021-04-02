@@ -1,0 +1,5 @@
+changes to BSE:
+message protocols for putting race data in agent qs
+pre-calculating sim data for threading - all get at similar time
+--> not slowing you down if are chosen to be more accurate
+
