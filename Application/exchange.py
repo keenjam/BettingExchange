@@ -243,6 +243,7 @@ class Exchange(Orderbook):
 		for book in self.compOrderbooks:
 			publicData = {}
 			publicData['time'] = time
+			publicData['competitor'] = book.competitorId
 			publicData['backs'] = {'best':book.backs.bestOdds,
 									'worst':book.backs.worstOdds,
 									'n': book.backs.numOfOrders,

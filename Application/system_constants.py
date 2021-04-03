@@ -2,7 +2,8 @@
 
 # General
 NUM_OF_COMPETITORS = 2
-NUM_OF_EXCHANGES = 1
+NUM_OF_EXCHANGES = 4
+PRE_RACE_BETTING_PERIOD_LENGTH = 10
 
 # Data Store Attributes
 RACE_DATA_FILENAME = 'race_event_core.csv'

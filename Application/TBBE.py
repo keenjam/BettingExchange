@@ -137,6 +137,17 @@ def updateRaceQ(bettingAgentQs, timestep):
     for id, q in bettingAgentQs.items():
         q.put(update)
 
+def preRaceBetPeriod(exchanges, startTime):
+    print("Start of pre-race betting period, lasting " + str(PRE_RACE_BETTING_PERIOD_LENGTH))
+    for i in range(PRE_RACE_BETTING_PERIOD_LENGTH):
+        time.sleep(0.01)
+    print("End of pre-race betting period")
+    marketUpdates = {}
+    for id, ex in exchanges.items():
+        timeInEvent = time.time() - startTime
+        print("Exchange " + str(id) + " markets: ")
+        print(exchanges[id].publishMarketState(timeInEvent))
+
 
 def eventSession(simulationId, event, numberOfTimesteps, winningCompetitor):
     """
@@ -172,8 +183,8 @@ def eventSession(simulationId, event, numberOfTimesteps, winningCompetitor):
     # Initialise event
     event.set()
 
-    # round of betting
-    #bet(competitors, agents)
+    # Pre-race betting period
+    preRaceBetPeriod(exchanges, startTime)
 
     # have loop which runs until competitor has won race
     i = 0
