@@ -1,6 +1,25 @@
 import random, math, statistics
 from system_constants import *
 
+'''
+
+1) Uncertainty on race speed should be different for each competitor as some horses are more reliable than others
+2) Alignment methods - cartesian vs mean vs other
+3) Normalisation of preferences, currently linear but could try others for more realistic distribution
+3) Responsiveness variable - changes over different periods of race -> website with graphs of horse speed over race distances
+   -> for more accuracy responsiveness doesn't just kick in a different points due to race length but its impact is different, e.g
+      for longer races the differnces in speed will be greater than in shorter race where horse runs flat out for whole distance
+4)
+
+
+
+
+
+
+
+'''
+
+
 # Competitor Attributes
 class CompetitorPreferences:
     def __init__(self):
@@ -33,18 +52,24 @@ class Competitor:
         self.id = id
         self.distance = 0
 
+        # competitor attributes
+        #self.class = ""
+        self.responsiveness = 1
+        self.energy = race_attributes.length
         self.speed = 0
         self.initVariables()
 
         self.preferences = CompetitorPreferences()
         self.race_attributes = race_attributes
         self.alignment = self.calculateAlignment()
-        self.responsiveness = 1
+
+
 
     def initVariables(self):
-        speedLower = random.randint(30, 40)
-        speedHigher = random.randint(41, 50)
+        speedLower = random.randint(30, 35)
+        speedHigher = random.randint(36, 40)
         self.speed = (speedLower, speedHigher)
+        #self.class = random.choice()
 
     def calculateAlignment(self):
         # CARTESIAN DIFFERENCE

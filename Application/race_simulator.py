@@ -8,14 +8,31 @@
 # then do check within BBE of size of pool,
 # if size is one then that competitor has won
 
-import random, csv, pandas, time
+
+'''
+
+https://royalsocietypublishing.org/doi/10.1098/rsbl.2011.1120
+^ horse optimal acceleration and drafting (staying behind other horses for most of race saves 17% of energy)
+
+
+https://patentimages.storage.googleapis.com/09/75/87/9296ba713a6891/US20080268930A1.pdf
+^ patent describing factors for a horse simulator
+
+
+'''
+
+import random, csv, pandas, time, operator
+import numpy as np
 from statistics import mean
 from system_constants import *
 from competitor import Competitor
 
+
+
 # Race Attributes
 class RaceAttributes:
     def __init__(self):
+        self.race_type = ""
         self.length = 0
         self.undulation = 0
         self.temperature = 0
@@ -27,6 +44,10 @@ class RaceAttributes:
         self.length = random.randint(MIN_RACE_LENGTH, MAX_RACE_LENGTH)
         self.undulation = random.randint(MIN_RACE_UNDULATION, MAX_RACE_UNDULATION)
         self.temperature = random.randint(MIN_RACE_TEMPERATURE, MAX_RACE_TEMPERATUE)
+        if (self.length <= 1445): self.race_type = "short"
+        elif (self.length > 1445 and self.length <= 2890): self.race_type = "medium"
+        else: self.race_type = "long"
+
 
     def createAttributeDict(self):
         race_attribute_dict = {
@@ -50,6 +71,11 @@ class Simulator:
         if SIM_VERBOSE: self.printCompPool()
         self.raceData = []
 
+        self.finalStretchDist = {"short": 550,
+                        "medium": 750,
+                        "long": 1000}
+        self.finalStretchIncreases = {}
+
         # Race state details
         self.winner = None
         self.finished = []
@@ -69,19 +95,53 @@ class Simulator:
 
         return comps
 
+    def updateEnergy(self, id, increases):
+        sortedComps = sorted(self.competitors, key = operator.attrgetter('distance'))
+        for i in range(len(sortedComps)-1):
+            # EFFECT OF DRAFTING DURING THE RACE
+            # 5 and 0.83 chosen as defined by https://royalsocietypublishing.org/doi/10.1098/rsbl.2011.1120
+            if sortedComps[i+1].distance <= sortedComps[i].distance + 5:
+                sortedComps[i].energy = sortedComps[i].energy - (0.83*increases[sortedComps[i].id])
+            else:
+                sortedComps[i].energy = sortedComps[i].energy - increases[sortedComps[i].id]
+
+        sortedComps[len(sortedComps)-1].energy = sortedComps[len(sortedComps)-1].energy - increases[sortedComps[len(sortedComps)-1].id]
+
     def updateResponsiveness(self):
         """ Update responsiveness attribute of all competitors """
+
+        def finalStretch(self, c):
+            if c.distance >= self.race_attributes.length - self.finalStretchDist[self.race_attributes.race_type] and c.id not in self.finalStretchIncreases:
+                # in final stretch
+                distanceLeft = (self.race_attributes.length - c.distance)
+                energyLeft = c.energy / distanceLeft
+                buildUp = energyLeft / distanceLeft
+                self.finalStretchIncreases[c.id] = buildUp
+
+            if c.id in self.finalStretchIncreases:
+                c.responsiveness = c.responsiveness + self.finalStretchIncreases[c.id]
+
+        # if race is long then competitors should have lower responsiveness at start and middle with burst at end
+        # if race is short then competitors should have resonably consistent responsiveness throughout
         for c in self.competitors:
-            c.responsiveness
+            finalStretch(self, c)
 
 
     def updateRaceState(self):
         """ Update race state by updating distance variable of Competitor objects """
+        increases = {}
         for c in self.competitors:
-            c.distance = c.distance + c.responsiveness * (c.alignment * random.randint(c.speed[0], c.speed[1]))
+            increase = c.responsiveness * (c.alignment * random.randint(c.speed[0], c.speed[1]))
+            increases[c.id] = increase
+
+            c.distance = c.distance + increase
             if c.distance >= self.race_attributes.length:
                 if self.winner == None: self.winner = c.id
                 self.finished.append(c.id)
+
+        # update competitor attributes
+        self.updateEnergy(c.id, increases)
+        self.updateResponsiveness()
 
         self.time_lapsed = time.time() - self.time_lapsed
 
@@ -106,7 +166,6 @@ class Simulator:
         self.numberOfTimesteps = len(self.raceData)
 
         self.writeToFile("core")
-
 
 
     # Write race state to file

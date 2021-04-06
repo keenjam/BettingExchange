@@ -91,6 +91,7 @@ def populateMarket(bettingAgents):
     """
     def initAgent(name, quantity, id):
         if name == 'Test': return Agent_Test(id, name)
+        if name == 'Random': return Agent_Random(id, name)
 
     id = 0
     for agent in config.agents:
@@ -142,11 +143,11 @@ def preRaceBetPeriod(exchanges, startTime):
     for i in range(PRE_RACE_BETTING_PERIOD_LENGTH):
         time.sleep(0.01)
     print("End of pre-race betting period")
-    marketUpdates = {}
-    for id, ex in exchanges.items():
-        timeInEvent = time.time() - startTime
-        print("Exchange " + str(id) + " markets: ")
-        print(exchanges[id].publishMarketState(timeInEvent))
+    # marketUpdates = {}
+    # for id, ex in exchanges.items():
+    #     timeInEvent = time.time() - startTime
+    #     print("Exchange " + str(id) + " markets: ")
+    #     print(exchanges[id].publishMarketState(timeInEvent))
 
 
 def eventSession(simulationId, event, numberOfTimesteps, winningCompetitor):
@@ -185,6 +186,7 @@ def eventSession(simulationId, event, numberOfTimesteps, winningCompetitor):
 
     # Pre-race betting period
     preRaceBetPeriod(exchanges, startTime)
+
 
     # have loop which runs until competitor has won race
     i = 0
@@ -227,8 +229,8 @@ def eventSession(simulationId, event, numberOfTimesteps, winningCompetitor):
     for id, ex in exchanges.items():
         ex.settleUp(bettingAgents, winningCompetitor)
 
-    for id, exchange in exchanges.items():
-        exchange.tapeDump('transactions.csv', 'a', 'keep')
+    # for id, exchange in exchanges.items():
+    #     exchange.tapeDump('transactions.csv', 'a', 'keep')
 
     for id, agent in bettingAgents.items():
         print("Agent " + str(id) + "\'s final balance: " + str(agent.balance))

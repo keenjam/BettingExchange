@@ -1,7 +1,7 @@
 # System constants used across BBE
 
 # General
-NUM_OF_COMPETITORS = 2
+NUM_OF_COMPETITORS = 8
 NUM_OF_EXCHANGES = 4
 PRE_RACE_BETTING_PERIOD_LENGTH = 10
 
@@ -22,8 +22,9 @@ SIM_VERBOSE = True
 EXCHANGE_VERBOSE = False
 
 # Event Attributes
-MIN_RACE_LENGTH = 1000
-MAX_RACE_LENGTH = 3200
+# average horse races are between 5 and 12 (1005 - 2414) furlongs or could go min - max (400 - 4000)
+MIN_RACE_LENGTH = 400
+MAX_RACE_LENGTH = 4000
 
 MIN_RACE_UNDULATION = 0
 MAX_RACE_UNDULATION = 100
