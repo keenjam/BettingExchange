@@ -49,11 +49,11 @@ class Agent_Random(BettingAgent):
             if(b == 0):
                 quoteodds = random.randint(minodds, minodds + 3)
                 order = Order(e, self.id, c, 'Back', quoteodds, markets[e][c]['QID'], 1, time)
-                print("BACK MADE BY AGENT " + str(self.id))
+                #print("BACK MADE BY AGENT " + str(self.id))
             else:
                 quoteodds = random.randint(maxodds - 3, maxodds)
                 order = Order(e, self.id, c, 'Lay', quoteodds, markets[e][c]['QID'], 1, time)
-                print("LAY MADE BY AGENT " + str(self.id))
+                #print("LAY MADE BY AGENT " + str(self.id))
         else:
             order = None
 

@@ -57,6 +57,7 @@ class Competitor:
         self.responsiveness = 1
         self.energy = race_attributes.length
         self.speed = 0
+        self.running_style = ""
         self.initVariables()
 
         self.preferences = CompetitorPreferences()
@@ -66,10 +67,10 @@ class Competitor:
 
 
     def initVariables(self):
-        speedLower = random.randint(30, 35)
-        speedHigher = random.randint(36, 40)
+        speedLower = random.randint(12, 15)
+        speedHigher = random.randint(16, 19)
         self.speed = (speedLower, speedHigher)
-        #self.class = random.choice()
+        self.running_style = random.choice(["frontrunner", "stalker", "closer"])
 
     def calculateAlignment(self):
         # CARTESIAN DIFFERENCE

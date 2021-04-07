@@ -71,6 +71,10 @@ class Simulator:
         if SIM_VERBOSE: self.printCompPool()
         self.raceData = []
 
+        self.injuredCompetitors = []
+        self.raceSplit = {"start": (0, self.race_attributes.length / 3),
+                          "middle": (self.race_attributes.length / 3, (self.race_attributes.length / 3) * 2),
+                          "end": ((self.race_attributes.length / 3) * 2, self.race_attributes.length)}
         self.finalStretchDist = {"short": 550,
                         "medium": 750,
                         "long": 1000}
@@ -95,7 +99,7 @@ class Simulator:
 
         return comps
 
-    def updateEnergy(self, id, increases):
+    def updateEnergy(self, increases):
         sortedComps = sorted(self.competitors, key = operator.attrgetter('distance'))
         for i in range(len(sortedComps)-1):
             # EFFECT OF DRAFTING DURING THE RACE
@@ -109,6 +113,23 @@ class Simulator:
 
     def updateResponsiveness(self):
         """ Update responsiveness attribute of all competitors """
+
+        def injury(self):
+            # 1 / 200 chance of 'break down'
+            if random.randint(1, 200) == 100: return True
+            else: return False
+
+        def runningStyleImpact(self, c):
+            if self.raceSplit['start'][0] <= c.distance <= self.raceSplit['start'][1]:
+                if c.running_style == "frontrunner": c.responsiveness = c.responsiveness * 1.2
+            if self.raceSplit['middle'][0] <= c.distance <= self.raceSplit['middle'][1]:
+                if c.running_style == "stalker": c.responsiveness = c.responsiveness * 1.2
+                if c.running_style == "frontrunner": c.responsiveness = c.responsiveness / 1.2
+            if self.raceSplit['end'][0] <= c.distance <= self.raceSplit['end'][1]:
+                if c.running_style == "closer": c.responsiveness = c.responsiveness * 1.2
+                if c.running_style == "stalker": c.responsiveness = c.responsiveness / 1.2
+
+
 
         def finalStretch(self, c):
             if c.distance >= self.race_attributes.length - self.finalStretchDist[self.race_attributes.race_type] and c.id not in self.finalStretchIncreases:
@@ -124,23 +145,37 @@ class Simulator:
         # if race is long then competitors should have lower responsiveness at start and middle with burst at end
         # if race is short then competitors should have resonably consistent responsiveness throughout
         for c in self.competitors:
+            if c in self.injuredCompetitors: continue
+            if injury(self) == True:
+                c.responsiveness = 0
+                self.injuredCompetitors.append(c)
+            runningStyleImpact(self, c)
             finalStretch(self, c)
+
+    # def calcInterference(self):
+    #     # obstruction [0,1]
+    #     sortedComps = sorted(self.competitors, key = operator.attrgetter('distance'))
+    #     for i in range(len(sortedComps)):
+    #         if sortedComps[i+1].distance <= sortedComps[i].distance + 3:
+
+
 
 
     def updateRaceState(self):
         """ Update race state by updating distance variable of Competitor objects """
         increases = {}
         for c in self.competitors:
+
             increase = c.responsiveness * (c.alignment * random.randint(c.speed[0], c.speed[1]))
             increases[c.id] = increase
-
+            if c in self.injuredCompetitors: continue
             c.distance = c.distance + increase
             if c.distance >= self.race_attributes.length:
                 if self.winner == None: self.winner = c.id
                 self.finished.append(c.id)
 
         # update competitor attributes
-        self.updateEnergy(c.id, increases)
+        self.updateEnergy(increases)
         self.updateResponsiveness()
 
         self.time_lapsed = time.time() - self.time_lapsed
