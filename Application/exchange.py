@@ -289,32 +289,35 @@ class Exchange(Orderbook):
 		bestLayAgentId = orderbook.lays.bestAgentId
 		bestBack = orderbook.backs.bestOdds
 		bestBackAgentId = orderbook.backs.bestAgentId
-		if order.direction == 'Back':
-			if orderbook.lays.numOfOrders > 0 and bestBack >= bestLay:
-				# bid lifts the best ask
-				if EXCHANGE_VERBOSE: print("Back $%s lifts best lay" % orderOdds)
-				counterparty = bestLayAgentId
-				#counter_coid = self.lays.orders[counterparty].coid
-				odds = bestLay  # bid crossed ask, so use ask price
-				# delete the ask just crossed
-				orderbook.lays.bookDeleteBest()
-				# delete the bid that was the latest order
-				orderbook.backs.bookDeleteBest()
-		elif order.direction == 'Lay':
-			if orderbook.backs.numOfOrders > 0 and bestLay <= bestBack:
-				# ask hits the best bid
-				if EXCHANGE_VERBOSE: print("Lay $%s hits best back" % orderOdds)
-				# remove the best bid
-				counterparty = bestBackAgentId
-				#counter_coid = self.bids.orders[counterparty].coid
-				odds = bestBack  # ask crossed bid, so use bid price
-				# delete the bid just crossed, from the exchange's records
-				orderbook.backs.bookDeleteBest()
-				# delete the ask that was the latest order, from the exchange's records
-				orderbook.lays.bookDeleteBest()
-		else:
-			# we should never get here
-			sys.exit('processOrder given neither Back nor Lay')
+
+		# Check to make sure that betting agent does not fulfill own orders
+		if bestLayAgentId != bestBackAgentId:		
+			if order.direction == 'Back':
+				if orderbook.lays.numOfOrders > 0 and bestBack >= bestLay:
+					# bid lifts the best ask
+					if EXCHANGE_VERBOSE: print("Back $%s lifts best lay" % orderOdds)
+					counterparty = bestLayAgentId
+					#counter_coid = self.lays.orders[counterparty].coid
+					odds = bestLay  # bid crossed ask, so use ask price
+					# delete the ask just crossed
+					orderbook.lays.bookDeleteBest()
+					# delete the bid that was the latest order
+					orderbook.backs.bookDeleteBest()
+			elif order.direction == 'Lay':
+				if orderbook.backs.numOfOrders > 0 and bestLay <= bestBack:
+					# ask hits the best bid
+					if EXCHANGE_VERBOSE: print("Lay $%s hits best back" % orderOdds)
+					# remove the best bid
+					counterparty = bestBackAgentId
+					#counter_coid = self.bids.orders[counterparty].coid
+					odds = bestBack  # ask crossed bid, so use bid price
+					# delete the bid just crossed, from the exchange's records
+					orderbook.backs.bookDeleteBest()
+					# delete the ask that was the latest order, from the exchange's records
+					orderbook.lays.bookDeleteBest()
+			else:
+				# we should never get here
+				sys.exit('processOrder given neither Back nor Lay')
 		# NB at this point we have deleted the order from the exchange's records
 		# but the two traders concerned still have to be notified
 		if EXCHANGE_VERBOSE: print("Counterparty: " + str(counterparty))

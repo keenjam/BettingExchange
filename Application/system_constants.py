@@ -19,7 +19,7 @@ MAX_ODDS = 1000.00
 # Print-Outs
 TBBE_VERBOSE = True
 SIM_VERBOSE = False
-EXCHANGE_VERBOSE = True
+EXCHANGE_VERBOSE = False
 
 # Event Attributes
 # average horse races are between 5 and 12 (1005 - 2414) furlongs or could go min - max (400 - 4000)
