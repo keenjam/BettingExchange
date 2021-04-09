@@ -75,6 +75,7 @@ class Simulator:
         self.raceSplit = {"start": (0, self.race_attributes.length / 3),
                           "middle": (self.race_attributes.length / 3, (self.race_attributes.length / 3) * 2),
                           "end": ((self.race_attributes.length / 3) * 2, self.race_attributes.length)}
+        self.runningStyleImpactChanged = []
         self.finalStretchDist = {"short": 550,
                         "medium": 750,
                         "long": 1000}
@@ -105,7 +106,7 @@ class Simulator:
             # EFFECT OF DRAFTING DURING THE RACE
             # 5 and 0.83 chosen as defined by https://royalsocietypublishing.org/doi/10.1098/rsbl.2011.1120
             if sortedComps[i+1].distance <= sortedComps[i].distance + 5:
-                sortedComps[i].energy = sortedComps[i].energy - (0.83*increases[sortedComps[i].id])
+                sortedComps[i].energy = sortedComps[i].energy - (0.1*increases[sortedComps[i].id])
             else:
                 sortedComps[i].energy = sortedComps[i].energy - increases[sortedComps[i].id]
 
@@ -116,19 +117,28 @@ class Simulator:
 
         def injury(self):
             # 1 / 200 chance of 'break down'
-            if random.randint(1, 200) == 100: return True
+            if random.randint(1, 5000) == 666: return True
             else: return False
 
         def runningStyleImpact(self, c):
             if self.raceSplit['start'][0] <= c.distance <= self.raceSplit['start'][1]:
-                if c.running_style == "frontrunner": c.responsiveness = c.responsiveness * 1.2
+                if c.running_style == "frontrunner" and c.id not in self.runningStyleImpactChanged:
+                    c.responsiveness = c.responsiveness * 1.4
+                    self.runningStyleImpactChanged.append(c.id)
             if self.raceSplit['middle'][0] <= c.distance <= self.raceSplit['middle'][1]:
-                if c.running_style == "stalker": c.responsiveness = c.responsiveness * 1.2
-                if c.running_style == "frontrunner": c.responsiveness = c.responsiveness / 1.2
+                if c.running_style == "stalker" and c.id not in self.runningStyleImpactChanged:
+                    c.responsiveness = c.responsiveness * 1.4
+                    self.runningStyleImpactChanged.append(c.id)
+                if c.running_style == "frontrunner" and c.id in self.runningStyleImpactChanged:
+                    c.responsiveness = c.responsiveness / 1.4
+                    self.runningStyleImpactChanged.remove(c.id)
             if self.raceSplit['end'][0] <= c.distance <= self.raceSplit['end'][1]:
-                if c.running_style == "closer": c.responsiveness = c.responsiveness * 1.2
-                if c.running_style == "stalker": c.responsiveness = c.responsiveness / 1.2
-
+                if c.running_style == "closer" and c.id not in self.runningStyleImpactChanged:
+                    c.responsiveness = c.responsiveness * 1.4
+                    self.runningStyleImpactChanged.append(c.id)
+                if c.running_style == "stalker" and c.id in self.runningStyleImpactChanged:
+                    c.responsiveness = c.responsiveness / 1.4
+                    self.runningStyleImpactChanged.remove(c.id)
 
 
         def finalStretch(self, c):
@@ -137,7 +147,8 @@ class Simulator:
                 distanceLeft = (self.race_attributes.length - c.distance)
                 energyLeft = c.energy / distanceLeft
                 buildUp = energyLeft / distanceLeft
-                self.finalStretchIncreases[c.id] = buildUp
+                # multiply buildUp by 2 for more dramatic race events
+                self.finalStretchIncreases[c.id] = buildUp * 3
 
             if c.id in self.finalStretchIncreases:
                 c.responsiveness = c.responsiveness + self.finalStretchIncreases[c.id]
@@ -152,11 +163,37 @@ class Simulator:
             runningStyleImpact(self, c)
             finalStretch(self, c)
 
-    # def calcInterference(self):
-    #     # obstruction [0,1]
-    #     sortedComps = sorted(self.competitors, key = operator.attrgetter('distance'))
-    #     for i in range(len(sortedComps)):
-    #         if sortedComps[i+1].distance <= sortedComps[i].distance + 3:
+    def calcInterference(self, c, increases):
+        # obstruction [0,1]
+        blockers = []
+        cTempDist = c.distance + increases[c.id]
+        for other in self.competitors:
+            if other == c: continue
+            otherTempDist = other.distance + increases[other.id]
+            if c.distance <= other.distance and c.distance >= other.distance - 5:
+                blockers.append((other.id, otherTempDist))
+
+        if len(blockers) == 0: return -1
+
+        numOfBlockers = len(blockers)
+        minBlockDist = 1000000
+        finalBlockerID = -1
+        for b in blockers:
+            if b[1] < minBlockDist:
+                minBlockDist = b[1]
+                finalBlockerID = b[0]
+
+        r = random.randint(NUM_OF_COMPETITORS - numOfBlockers*5, NUM_OF_COMPETITORS)
+        if r == NUM_OF_COMPETITORS:
+            # distance is not capped
+            return -1
+        else:
+            if SIM_VERBOSE: print(str(c.id) + " is blocked to distance of " + str(minBlockDist) + " from " + str(cTempDist) + " by " + str(finalBlockerID))
+            return minBlockDist
+
+
+
+
 
 
 
@@ -165,14 +202,19 @@ class Simulator:
         """ Update race state by updating distance variable of Competitor objects """
         increases = {}
         for c in self.competitors:
-
             increase = c.responsiveness * (c.alignment * random.randint(c.speed[0], c.speed[1]))
             increases[c.id] = increase
-            if c in self.injuredCompetitors: continue
-            c.distance = c.distance + increase
+
+
+        for c in self.competitors:
+            if c in self.injuredCompetitors or c.id in self.finished: continue
+            cappedDist = self.calcInterference(c, increases)
+            if cappedDist == -1: c.distance = c.distance + increases[c.id]
+            else: c.distance = min(cappedDist, c.distance + increases[c.id])
+            # check if moved into next stage of race
             if c.distance >= self.race_attributes.length:
                 if self.winner == None: self.winner = c.id
-                self.finished.append(c.id)
+                if c.id not in self.finished: self.finished.append(c.id)
 
         # update competitor attributes
         self.updateEnergy(increases)
@@ -192,7 +234,7 @@ class Simulator:
         """ Run and manage race simulation """
         timestamp = 0
         self.saveRaceState(timestamp)
-        while len(self.finished) < NUM_OF_COMPETITORS:
+        while len(self.finished) + len(self.injuredCompetitors) < NUM_OF_COMPETITORS:
             timestamp = timestamp + 1
             self.updateRaceState()
             self.saveRaceState(timestamp)
