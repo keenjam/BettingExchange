@@ -2,7 +2,7 @@
 
 # General
 NUM_OF_COMPETITORS = 8
-NUM_OF_EXCHANGES = 4
+NUM_OF_EXCHANGES = 1
 PRE_RACE_BETTING_PERIOD_LENGTH = 10
 
 # Data Store Attributes
@@ -17,9 +17,9 @@ MIN_ODDS = 1.00
 MAX_ODDS = 1000.00
 
 # Print-Outs
-TBBE_VERBOSE = False
-SIM_VERBOSE = True
-EXCHANGE_VERBOSE = False
+TBBE_VERBOSE = True
+SIM_VERBOSE = False
+EXCHANGE_VERBOSE = True
 
 # Event Attributes
 # average horse races are between 5 and 12 (1005 - 2414) furlongs or could go min - max (400 - 4000)

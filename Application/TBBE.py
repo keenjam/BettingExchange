@@ -92,6 +92,7 @@ def populateMarket(bettingAgents):
     def initAgent(name, quantity, id):
         if name == 'Test': return Agent_Test(id, name)
         if name == 'Random': return Agent_Random(id, name)
+        if name == 'Leader_Wins': return Agent_Leader_Wins(id, name)
 
     id = 0
     for agent in config.agents:
@@ -193,6 +194,7 @@ def eventSession(simulationId, event, numberOfTimesteps, winningCompetitor):
     while(i < numberOfTimesteps):
         updateRaceQ(bettingAgentQs, i+1)
         i = i+1
+        if TBBE_VERBOSE: print(i)
         # run simulation
         #race.updateRaceState()
         #race.saveRaceState(0)
