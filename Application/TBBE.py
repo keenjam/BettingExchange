@@ -41,6 +41,7 @@ def agentLogic(agent, agentQ, exchanges, exchangeOrderQs, event, startTime, numb
     event.wait()
     # Whole event is running, run logic for betting agents
     while event.isSet():
+        time.sleep(0.01)
         timeInEvent = (time.time() - startTime) * numberOfTimesteps
         order = None
         trade = None
@@ -93,6 +94,7 @@ def populateMarket(bettingAgents):
         if name == 'Test': return Agent_Test(id, name)
         if name == 'Random': return Agent_Random(id, name)
         if name == 'Leader_Wins': return Agent_Leader_Wins(id, name)
+        if name == 'Underdog': return Agent_Underdog(id, name)
 
     id = 0
     for agent in config.agents:

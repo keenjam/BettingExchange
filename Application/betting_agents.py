@@ -11,7 +11,7 @@ Should be stock pool of betting agents representing normal civilian bettors (eg.
 
 
 
-import sys, math, threading, time, queue, random, csv, config, random
+import sys, math, threading, time, queue, random, csv, config, random, operator
 from message_protocols import Order
 from system_constants import *
 
@@ -111,11 +111,59 @@ class Agent_Leader_Wins(BettingAgent):
         order = None
         if self.numOfBets >= 1 or self.raceStarted == False: return order
         if self.bettingTime <= self.raceTimestep:
-            sortedComps = dict(sorted(self.currentRaceState.items(), key = lambda item: item[1]))
-            compInTheLead = int(sortedComps[0][0])
+            sortedComps = sorted(self.currentRaceState.items(), key = operator.itemgetter(1))
+            compInTheLead = int(sortedComps[len(sortedComps)-1][0])
             if markets[self.exchange][compInTheLead]['backs']['n'] > 0:
                 quoteodds = markets[self.exchange][compInTheLead]['backs']['best'] + 1
             else:
                 quoteodds = markets[self.exchange][compInTheLead]['backs']['worst']
-            order = Order(self.exchange, self.id, compInTheLead, 'Back', quoteodds, markets[self.exchange][compInTheLead]['QID'], 1, time)
+            order = Order(self.exchange, self.id, compInTheLead, 'Back', quoteodds, 1, markets[self.exchange][compInTheLead]['QID'], time)
+        return order
+
+class Agent_Underdog(BettingAgent):
+    # This betting agent's view of the race outcome is that the competitor in
+    # second place will win if distance between it and the winner is small
+    # if competitor in second place falls too far behind then agent will lay the
+    # second place competitor and back the winning competitor
+    def __init__(self, id, name):
+        BettingAgent.__init__(self, id, name)
+        self.bettingTime = random.randint(5, 15)
+        self.threshold = random.randint(10, 35)
+        self.compInTheLead = None
+        self.compInSecond = None
+        self.job = None
+
+    def observeRaceState(self, timestep, compDistances):
+        super().observeRaceState(timestep, compDistances)
+        if self.bettingTime <= self.raceTimestep:
+            sortedComps = sorted(self.currentRaceState.items(), key = operator.itemgetter(1))
+            #print(sortedComps)
+            #print(sortedComps[0][0])
+            compInTheLead = sortedComps[len(sortedComps)-1]
+            compInSecond = sortedComps[len(sortedComps)-2]
+
+            if float(compInTheLead[1]) <= (float(compInSecond[1]) + float(self.threshold)) and compInTheLead[0] != self.compInTheLead:
+                self.job = "back_underdog"
+                self.compInTheLead = compInTheLead[0]
+                self.compInSecond = compInSecond[0]
+
+    def getorder(self, time, markets):
+        order = None
+        if self.numOfBets >= 10 or self.raceStarted == False: return order
+        if self.bettingTime <= self.raceTimestep:
+            if self.job == 'back_underdog':
+                if markets[self.exchange][self.compInSecond]['backs']['n'] > 0:
+                    quoteodds = markets[self.exchange][self.compInSecond]['backs']['best'] + 1
+                else:
+                    quoteodds = markets[self.exchange][self.compInTheLead]['backs']['worst']
+                order = Order(self.exchange, self.id, self.compInSecond, 'Back', quoteodds, 1, markets[self.exchange][self.compInSecond]['QID'], time)
+                self.job = "lay_leader"
+
+            elif self.job == 'lay_leader':
+                if markets[self.exchange][self.compInTheLead]['lays']['n'] > 0:
+                    quoteodds = markets[self.exchange][self.compInTheLead]['lays']['best'] - 1
+                else:
+                    quoteodds = markets[self.exchange][self.compInTheLead]['lays']['worst']
+                order = Order(self.exchange, self.id, self.compInTheLead, 'Lay', quoteodds, 1, markets[self.exchange][self.compInTheLead]['QID'], time)
+                self.job = None
         return order
