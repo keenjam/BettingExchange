@@ -119,7 +119,7 @@ class Agent_Leader_Wins(BettingAgent):
             sortedComps = sorted(self.currentRaceState.items(), key = operator.itemgetter(1))
             compInTheLead = int(sortedComps[len(sortedComps)-1][0])
             if markets[self.exchange][compInTheLead]['backs']['n'] > 0:
-                quoteodds = markets[self.exchange][compInTheLead]['backs']['best'] + 1
+                quoteodds = markets[self.exchange][compInTheLead]['backs']['best'] - 1
             else:
                 quoteodds = markets[self.exchange][compInTheLead]['backs']['worst']
             order = Order(self.exchange, self.id, compInTheLead, 'Back', quoteodds, 1, markets[self.exchange][compInTheLead]['QID'], time)
@@ -158,7 +158,7 @@ class Agent_Underdog(BettingAgent):
         if self.bettingTime <= self.raceTimestep:
             if self.job == 'back_underdog':
                 if markets[self.exchange][self.compInSecond]['backs']['n'] > 0:
-                    quoteodds = markets[self.exchange][self.compInSecond]['backs']['best'] + 1
+                    quoteodds = markets[self.exchange][self.compInSecond]['backs']['best'] - 1
                 else:
                     quoteodds = markets[self.exchange][self.compInTheLead]['backs']['worst']
                 order = Order(self.exchange, self.id, self.compInSecond, 'Back', quoteodds, 1, markets[self.exchange][self.compInSecond]['QID'], time)
@@ -166,7 +166,7 @@ class Agent_Underdog(BettingAgent):
 
             elif self.job == 'lay_leader':
                 if markets[self.exchange][self.compInTheLead]['lays']['n'] > 0:
-                    quoteodds = markets[self.exchange][self.compInTheLead]['lays']['best'] - 1
+                    quoteodds = markets[self.exchange][self.compInTheLead]['lays']['best'] + 1
                 else:
                     quoteodds = markets[self.exchange][self.compInTheLead]['lays']['worst']
                 order = Order(self.exchange, self.id, self.compInTheLead, 'Lay', quoteodds, 1, markets[self.exchange][self.compInTheLead]['QID'], time)
@@ -193,6 +193,7 @@ class Agent_Back_Favourite(BettingAgent):
                 if bestodds < lowestOdds:
                     lowestOdds = bestodds
                     marketsFave = comp
+        #print("MARKET FAVE IS: " + str(marketsFave))
 
 
         if marketsFave == self.marketsFave:
@@ -201,7 +202,7 @@ class Agent_Back_Favourite(BettingAgent):
 
         elif marketsFave != None:
             self.marketsFave = marketsFave
-            quoteodds = lowestOdds + 0.1
+            quoteodds = lowestOdds - 0.1
             order = Order(self.exchange, self.id, marketsFave, 'Back', quoteodds, 1, markets[self.exchange][marketsFave]['QID'], time)
 
         return order
@@ -213,6 +214,8 @@ class Agent_Linex(BettingAgent):
     # recording after random amount of time so as to avoid interference at start of race
     def __init__(self, id, name, lengthOfRace):
         BettingAgent.__init__(self, id, name, lengthOfRace)
+        self.timeSinceLastBet = 0
+        self.bettingInterval = random.randint(30, 60)
         self.recordingTime = random.randint(5, 15)
         self.n = random.randint(15, 25)
         self.predictedResults = {}
@@ -250,26 +253,30 @@ class Agent_Linex(BettingAgent):
             if self.predictedWinner != None:
                 self.job = "back_pred_winner"
 
+        if self.predicted == True:
+            self.timeSinceLastBet = self.timeSinceLastBet + 1
+            if self.timeSinceLastBet >= self.bettingInterval:
+                self.predicted == False
+                self.timeSinceLastBet = 0
+
     def getorder(self, time, markets):
         order = None
         if self.predicted == False: return order
 
-        print(self.predictedWinner)
-        print("LOSER: " + str(self.predictedLoser))
+        #print(self.predictedWinner)
+        #print("LOSER: " + str(self.predictedLoser))
 
         if self.job == 'back_pred_winner':
-            print("BACKING")
             if markets[self.exchange][self.predictedWinner]['backs']['n'] > 0:
-                quoteodds = markets[self.exchange][self.predictedWinner]['backs']['best'] + 1
+                quoteodds = markets[self.exchange][self.predictedWinner]['backs']['best'] - 0.1
             else:
                 quoteodds = markets[self.exchange][self.predictedWinner]['backs']['worst']
             order = Order(self.exchange, self.id, self.predictedWinner, 'Back', quoteodds, 1, markets[self.exchange][self.predictedWinner]['QID'], time)
             self.job = "lay_pred_loser"
 
         elif self.job == 'lay_pred_loser':
-            print("LAYING")
             if markets[self.exchange][self.predictedLoser]['lays']['n'] > 0:
-                quoteodds = markets[self.exchange][self.predictedLoser]['lays']['best'] - 1
+                quoteodds = markets[self.exchange][self.predictedLoser]['lays']['best'] + 0.1
             else:
                 quoteodds = markets[self.exchange][self.predictedLoser]['lays']['worst']
             order = Order(self.exchange, self.id, self.predictedLoser, 'Lay', quoteodds, 1, markets[self.exchange][self.predictedLoser]['QID'], time)

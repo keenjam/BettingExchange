@@ -63,15 +63,17 @@ class OrderbookHalf:
 		# record best price and associated betting agent id
 		if len(self.market) > 0 :
 			if self.booktype == 'Back':
-				self.bestOdds = self.anonymisedMarket[-1][0]
-			else :
 				self.bestOdds = self.anonymisedMarket[0][0]
+				self.worstOdds = self.anonymisedMarket[-1][0]
+			else :
+				self.bestOdds = self.anonymisedMarket[-1][0]
+				self.worstOdds = self.anonymisedMarket[0][0]
 			self.bestAgentId = self.market[self.bestOdds][1][0][2]
 		else :
 			self.bestOdds = None
 			self.bestAgentId = None
 
-		if EXCHANGE_VERBOSE : print(self.market)
+		#if EXCHANGE_VERBOSE : print(self.market)
 
 
 	def bookAddOrder(self, order):
@@ -128,9 +130,9 @@ class OrderbookHalf:
 			self.numOfOrders = self.numOfOrders - 1
 			if self.numOfOrders > 0:
 				if self.booktype == 'Back':
-					self.bestOdds = max(self.market.keys())
-				else:
 					self.bestOdds = min(self.market.keys())
+				else:
+					self.bestOdds = max(self.market.keys())
 				self.marketDepth = len(self.market.keys())
 			else:
 				self.bestOdds = self.worstOdds
@@ -154,8 +156,8 @@ class Orderbook(OrderbookHalf):
 
 	def __init__(self, competitorId):
 		self.competitorId = competitorId
-		self.backs = OrderbookHalf('Back', MIN_ODDS)
-		self.lays = OrderbookHalf('Lay', MAX_ODDS)
+		self.backs = OrderbookHalf('Back', MAX_ODDS)
+		self.lays = OrderbookHalf('Lay', MIN_ODDS)
 		self.tape = []
 		self.quoteId = 0  #unique ID code for each quote accepted onto the book
 
@@ -185,12 +187,12 @@ class Exchange(Orderbook):
 
 		if order.direction == 'Back':
 			response = orderbook.backs.bookAddOrder(order)
-			bestOdds = orderbook.backs.anonymisedMarket[-1][0]
+			bestOdds = orderbook.backs.anonymisedMarket[0][0]
 			orderbook.backs.bestOdds = bestOdds
 			orderbook.backs.bestAgentId = orderbook.backs.market[bestOdds][1][0][2]
 		else:
 			response = orderbook.lays.bookAddOrder(order)
-			bestOdds = orderbook.lays.anonymisedMarket[0][0]
+			bestOdds = orderbook.lays.anonymisedMarket[-1][0]
 			orderbook.lays.bestOdds = bestOdds
 			orderbook.lays.bestAgentId = orderbook.lays.market[bestOdds][1][0][2]
 		return [order.orderId, response]
@@ -208,7 +210,7 @@ class Exchange(Orderbook):
 		if order.direction == 'Back':
 			orderbook.backs.bookDeleteOrder(order)
 			if orderbook.backs.numOfOrders > 0 :
-				bestOdds = orderbook.backs.anonymisedMarket[-1][0]
+				bestOdds = orderbook.backs.anonymisedMarket[0][0]
 				orderbook.backs.bestOdds = bestOdds
 				orderbook.backs.bestAgentId = orderbook.backs.market[bestOdds][1][0][2]
 			else: # this side of book is empty
@@ -220,7 +222,7 @@ class Exchange(Orderbook):
 		elif order.direction == 'Lay':
 			orderbook.lays.bookDeleteOrder(order)
 			if orderbook.lays.numOfOrders > 0 :
-				bestOdds = orderbook.lays.anonymisedMarket[0][0]
+				bestOdds = orderbook.lays.anonymisedMarket[-1][0]
 				orderbook.lays.bestOdds = bestOdds
 				orderbook.lays.bestAgentId = orderbook.lays.market[bestOdds][1][0][2]
 			else: # this side of book is empty
@@ -290,10 +292,12 @@ class Exchange(Orderbook):
 		bestBack = orderbook.backs.bestOdds
 		bestBackAgentId = orderbook.backs.bestAgentId
 
+		if EXCHANGE_VERBOSE: print(order)
+
 		# Check to make sure that betting agent does not fulfill own orders
-		if bestLayAgentId != bestBackAgentId:		
+		if bestLayAgentId != bestBackAgentId:
 			if order.direction == 'Back':
-				if orderbook.lays.numOfOrders > 0 and bestBack >= bestLay:
+				if orderbook.lays.numOfOrders > 0 and bestBack <= bestLay:
 					# bid lifts the best ask
 					if EXCHANGE_VERBOSE: print("Back $%s lifts best lay" % orderOdds)
 					counterparty = bestLayAgentId
@@ -304,7 +308,7 @@ class Exchange(Orderbook):
 					# delete the bid that was the latest order
 					orderbook.backs.bookDeleteBest()
 			elif order.direction == 'Lay':
-				if orderbook.backs.numOfOrders > 0 and bestLay <= bestBack:
+				if orderbook.backs.numOfOrders > 0 and bestLay >= bestBack:
 					# ask hits the best bid
 					if EXCHANGE_VERBOSE: print("Lay $%s hits best back" % orderOdds)
 					# remove the best bid
