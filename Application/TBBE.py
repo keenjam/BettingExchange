@@ -1,9 +1,11 @@
 ### ~ THREADED BRISTOL BETTING EXCHANGE ~ ###
 
 import sys, math, threading, time, queue, random, csv, config
+from copy import deepcopy
 from system_constants import *
 from betting_agents import *
 from race_simulator import Simulator
+from ex_ante_odds_generator import *
 from exchange import Exchange
 from message_protocols import *
 
@@ -86,17 +88,18 @@ def populateMarket(bettingAgents):
             bettingAgents[id] = initAgent(agent[0], agent[1], id)
             id = id + 1
 
-def populateMarket(bettingAgents, lengthOfRace):
+def populateMarket(bettingAgents, lengthOfRace, endOfInPlayBettingPeriod):
     """
     Populate market with betting agents as specified in config file
     """
     def initAgent(name, quantity, id):
-        if name == 'Test': return Agent_Test(id, name, lengthOfRace)
-        if name == 'Random': return Agent_Random(id, name, lengthOfRace)
-        if name == 'Leader_Wins': return Agent_Leader_Wins(id, name, lengthOfRace)
-        if name == 'Underdog': return Agent_Underdog(id, name, lengthOfRace)
-        if name == 'Back_Favourite': return Agent_Back_Favourite(id, name, lengthOfRace)
-        if name == 'Linex': return Agent_Linex(id, name, lengthOfRace)
+        if name == 'Test': return Agent_Test(id, name, lengthOfRace, endOfInPlayBettingPeriod)
+        if name == 'Random': return Agent_Random(id, name, lengthOfRace, endOfInPlayBettingPeriod)
+        if name == 'Leader_Wins': return Agent_Leader_Wins(id, name, lengthOfRace, endOfInPlayBettingPeriod)
+        if name == 'Underdog': return Agent_Underdog(id, name, lengthOfRace, endOfInPlayBettingPeriod)
+        if name == 'Back_Favourite': return Agent_Back_Favourite(id, name, lengthOfRace, endOfInPlayBettingPeriod)
+        if name == 'Linex': return Agent_Linex(id, name, lengthOfRace, endOfInPlayBettingPeriod)
+        if name == 'Priveledged': return Agent_Priveledged(id, name, lengthOfRace, endOfInPlayBettingPeriod)
 
     id = 0
     for agent in config.agents:
@@ -113,11 +116,11 @@ def initialiseExchanges(exchanges, exchangeOrderQs):
         exchanges[i] = Exchange(i, NUM_OF_COMPETITORS) # NUM_OF_COMPETITORS may be changed to list of competitor objects that are participating
         exchangeOrderQs[i] = queue.Queue()
 
-def initialiseBettingAgents(bettingAgents, bettingAgentQs, bettingAgentThreads, exchanges, exchangeOrderQs, startTime, numberOfTimesteps, lengthOfRace, event):
+def initialiseBettingAgents(bettingAgents, bettingAgentQs, bettingAgentThreads, exchanges, exchangeOrderQs, startTime, numberOfTimesteps, lengthOfRace, event, endOfInPlayBettingPeriod):
     """
     Initialise betting agents
     """
-    populateMarket(bettingAgents, lengthOfRace)
+    populateMarket(bettingAgents, lengthOfRace, endOfInPlayBettingPeriod)
     # Create threads for all betting agents that wait until event session
     # has started
     for id, agent in bettingAgents.items():
@@ -135,7 +138,7 @@ def updateRaceQ(bettingAgentQs, timestep):
     time = r[0][0]
     compDistances = {}
     for c in range(NUM_OF_COMPETITORS):
-        compDistances[c] = r[0][c+1]
+        compDistances[c] = float(r[0][c+1])
 
     # Create update
     update = raceUpdate(time, compDistances)
@@ -155,7 +158,7 @@ def preRaceBetPeriod(exchanges, startTime):
     #     print(exchanges[id].publishMarketState(timeInEvent))
 
 
-def eventSession(simulationId, event, numberOfTimesteps, lengthOfRace, winningCompetitor):
+def eventSession(simulationId, event, numberOfTimesteps, lengthOfRace, winningCompetitor, endOfInPlayBettingPeriod):
     """
     Set up and management of race event
     """
@@ -172,7 +175,7 @@ def eventSession(simulationId, event, numberOfTimesteps, lengthOfRace, winningCo
     bettingAgents = {}
     bettingAgentQs = {}
     bettingAgentThreads = []
-    initialiseBettingAgents(bettingAgents, bettingAgentQs, bettingAgentThreads, exchanges, exchangeOrderQs, startTime, numberOfTimesteps, lengthOfRace, event)
+    initialiseBettingAgents(bettingAgents, bettingAgentQs, bettingAgentThreads, exchanges, exchangeOrderQs, startTime, numberOfTimesteps, lengthOfRace, event, endOfInPlayBettingPeriod)
 
     # Start exchange threads
     for id, exchange in exchanges.items():
@@ -257,14 +260,23 @@ def main():
 
         # Create race event data
         race = Simulator(NUM_OF_COMPETITORS)
-        race.run()
+        compPool = deepcopy(race.competitors)
+
+
+        # create simulations for procurement of ex-ante odds for priveledged betters
+        createExAnteOdds(compPool)
+
+        race.run("core")
         numberOfTimesteps = race.numberOfTimesteps
         lengthOfRace = race.race_attributes.length
         winningCompetitor = race.winner
+        endOfInPlayBettingPeriod = race.winningTimestep - IN_PLAY_CUT_OFF_PERIOD
+
+
 
         # Start up thread for race on which all other threads will wait
         event = threading.Event()
-        eventSession(simulationId, event, numberOfTimesteps, lengthOfRace, winningCompetitor)
+        eventSession(simulationId, event, numberOfTimesteps, lengthOfRace, winningCompetitor, endOfInPlayBettingPeriod)
 
         currentSimulation = currentSimulation + 1
 

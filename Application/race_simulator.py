@@ -63,11 +63,12 @@ class RaceAttributes:
 
 class Simulator:
     """ Race simulator """
-    def __init__(self, numOfCompetitors):
+    def __init__(self, numOfCompetitors, comps = None):
         self.time_lapsed = 0
         self.race_attributes = RaceAttributes()
         if SIM_VERBOSE: self.printInitialConditions()
-        self.competitors = self.createCompetitors(numOfCompetitors)
+        if comps == None: self.competitors = self.createCompetitors(numOfCompetitors)
+        else: self.competitors = comps
         if SIM_VERBOSE: self.printCompPool()
         self.raceData = []
 
@@ -83,6 +84,7 @@ class Simulator:
 
         # Race state details
         self.winner = None
+        self.winningTimestep = None
         self.finished = []
 
     ### CLASS FUNCTIONS BELOW ###
@@ -144,8 +146,8 @@ class Simulator:
         def finalStretch(self, c):
             if c.distance >= self.race_attributes.length - self.finalStretchDist[self.race_attributes.race_type] and c.id not in self.finalStretchIncreases:
                 # in final stretch
-                distanceLeft = (self.race_attributes.length - c.distance)
-                energyLeft = c.energy / distanceLeft
+                distanceLeft = int(self.race_attributes.length - c.distance)
+                energyLeft = int(c.energy / distanceLeft)
                 buildUp = energyLeft / distanceLeft
                 # multiply buildUp by 2 for more dramatic race events
                 self.finalStretchIncreases[c.id] = buildUp * 3
@@ -198,7 +200,7 @@ class Simulator:
 
 
 
-    def updateRaceState(self):
+    def updateRaceState(self, timestamp):
         """ Update race state by updating distance variable of Competitor objects """
         increases = {}
         for c in self.competitors:
@@ -209,11 +211,13 @@ class Simulator:
         for c in self.competitors:
             if c in self.injuredCompetitors or c.id in self.finished: continue
             cappedDist = self.calcInterference(c, increases)
-            if cappedDist == -1: c.distance = c.distance + increases[c.id]
-            else: c.distance = min(cappedDist, c.distance + increases[c.id])
+            if cappedDist == -1: c.distance = min(self.race_attributes.length, c.distance + increases[c.id])
+            else: c.distance = min(self.race_attributes.length, min(cappedDist, c.distance + increases[c.id]))
             # check if moved into next stage of race
             if c.distance >= self.race_attributes.length:
-                if self.winner == None: self.winner = c.id
+                if self.winner == None:
+                    self.winner = c.id
+                    self.winningTimestep = timestamp
                 if c.id not in self.finished: self.finished.append(c.id)
 
         # update competitor attributes
@@ -230,19 +234,19 @@ class Simulator:
 
         self.raceData.append(row)
 
-    def run(self):
+    def run(self, fn):
         """ Run and manage race simulation """
         timestamp = 0
         self.saveRaceState(timestamp)
         while len(self.finished) + len(self.injuredCompetitors) < NUM_OF_COMPETITORS:
             timestamp = timestamp + 1
-            self.updateRaceState()
+            self.updateRaceState(timestamp)
             self.saveRaceState(timestamp)
 
 
         self.numberOfTimesteps = len(self.raceData)
 
-        self.writeToFile("core")
+        if fn != None: self.writeToFile(fn)
 
 
     # Write race state to file

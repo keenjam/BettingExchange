@@ -373,8 +373,8 @@ class Exchange(Orderbook):
 					backer.balance = backer.balance + (odds * stake)
 					layer.balance = layer.balance - (odds * stake)
 				else:
-					layer.balance = layer.balance + (odds * stake)
-					backer.balance = backer.balance - (odds * stake)
+					layer.balance = layer.balance + stake
+					backer.balance = backer.balance - stake
 
 
 
