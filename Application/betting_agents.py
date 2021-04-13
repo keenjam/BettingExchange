@@ -277,7 +277,7 @@ class Agent_Linex(BettingAgent):
             timeTaken = float(len(dists))
             avgSpeed = (toDist - fromDist) / timeTaken
             distLeft = self.lengthOfRace - toDist
-            
+
             try:
                 self.predictedResults[i] = distLeft / avgSpeed
             except:
@@ -337,14 +337,44 @@ class Agent_Linex(BettingAgent):
         return order
 
 class Agent_Priveledged(BettingAgent):
+    '''
+    create reasonable ex ante odds for rest of bettors (no random till in play and then use best back/lay)
+    when in play will be able to run one simulation every 10/15 time steps
+    this will simulate snap decisions within in-play betting
+    greater inefficiencies in in play betting markets because more data point all of which
+    have Uncertainty
+    '''
     def __init__(self, id, name, lengthOfRace, endOfInPlayBettingPeriod):
         BettingAgent.__init__(self, id, name, lengthOfRace, endOfInPlayBettingPeriod)
         self.exAnteOdds = getExAnteOdds()
 
 
-        print("AGENT ID: " + str(self.name) + " " + str(self.id) + " Ex Ante Odds Pred: " + str(self.exAnteOdds))
+        print("AGENT ID: " + str(self.id) + " " + str(self.id) + " Ex Ante Odds Pred: " + str(self.exAnteOdds))
 
+    def getExAnteOrder(self, time, markets):
+        for i in range(len(self.exAnteOdds)):
+            odds = self.exAnteOdds[i]
+            direction = 'Back'
+            if int(odds) == 0:
+                direction = 'Lay'
+                odds = MAX_ODDS
 
+            order = Order(self.exchange, self.id, i, direction, odds, 1, markets[self.exchange][i]['QID'], time)
+            self.orders.append(order)
+            print("AGENT " + str(self.id) + ": " + str(order))
+
+    def getInPlayOrder(self, time, markets):
+        return
 
     def getorder(self, time, markets):
-        return None
+        order = None
+        if self.bettingPeriod == False: return order
+        if self.raceStarted == False:
+            self.getExAnteOrder(time, markets)
+        else:
+            self.getInPlayOrder(time, markets)
+
+        if len(self.orders) > 0:
+            order = self.orders[0]
+
+        return order

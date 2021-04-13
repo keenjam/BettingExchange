@@ -63,4 +63,5 @@ def getExAnteOdds():
     global index
     odds = exAnteOdds[index]
     index = index + 1
+    print("INDEX: " + str(index))
     return odds
