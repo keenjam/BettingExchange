@@ -63,9 +63,10 @@ class RaceAttributes:
 
 class Simulator:
     """ Race simulator """
-    def __init__(self, numOfCompetitors, comps = None):
+    def __init__(self, numOfCompetitors, comps = None, raceAttributes = None):
         self.time_lapsed = 0
-        self.race_attributes = RaceAttributes()
+        if raceAttributes == None: self.race_attributes = RaceAttributes()
+        else: self.race_attributes = raceAttributes
         if SIM_VERBOSE: self.printInitialConditions()
         if comps == None: self.competitors = self.createCompetitors(numOfCompetitors)
         else: self.competitors = comps
@@ -158,7 +159,7 @@ class Simulator:
         # if race is long then competitors should have lower responsiveness at start and middle with burst at end
         # if race is short then competitors should have resonably consistent responsiveness throughout
         for c in self.competitors:
-            if c in self.injuredCompetitors: continue
+            if c in self.injuredCompetitors or c in self.finished: continue
             if injury(self) == True:
                 c.responsiveness = 0
                 self.injuredCompetitors.append(c)

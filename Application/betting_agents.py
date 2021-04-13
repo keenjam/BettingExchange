@@ -14,7 +14,7 @@ Should be stock pool of betting agents representing normal civilian bettors (eg.
 import sys, math, threading, time, queue, random, csv, config, random, operator
 from message_protocols import Order
 from system_constants import *
-from ex_ante_odds_generator import getExAnteOdds
+from ex_ante_odds_generator import getExAnteOdds, getInPlayOdds
 
 class BettingAgent:
     def __init__(self, id, name, lengthOfRace, endOfInPlayBettingPeriod, exchange = None):
@@ -346,7 +346,7 @@ class Agent_Priveledged(BettingAgent):
     '''
     def __init__(self, id, name, lengthOfRace, endOfInPlayBettingPeriod):
         BettingAgent.__init__(self, id, name, lengthOfRace, endOfInPlayBettingPeriod)
-        self.exAnteOdds = getExAnteOdds()
+        self.exAnteOdds = getExAnteOdds(self.id)
 
 
         print("AGENT ID: " + str(self.id) + " " + str(self.id) + " Ex Ante Odds Pred: " + str(self.exAnteOdds))
@@ -361,9 +361,11 @@ class Agent_Priveledged(BettingAgent):
 
             order = Order(self.exchange, self.id, i, direction, odds, 1, markets[self.exchange][i]['QID'], time)
             self.orders.append(order)
-            print("AGENT " + str(self.id) + ": " + str(order))
+            #print("AGENT " + str(self.id) + ": " + str(order))
 
     def getInPlayOrder(self, time, markets):
+        odds = getInPlayOdds(self.id, self.currentRaceState)
+        #print(odds)
         return
 
     def getorder(self, time, markets):
@@ -375,6 +377,6 @@ class Agent_Priveledged(BettingAgent):
             self.getInPlayOrder(time, markets)
 
         if len(self.orders) > 0:
-            order = self.orders[0]
+            order = self.orders.pop(0)
 
         return order

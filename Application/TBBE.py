@@ -261,10 +261,11 @@ def main():
         # Create race event data
         race = Simulator(NUM_OF_COMPETITORS)
         compPool = deepcopy(race.competitors)
+        raceAttributes = deepcopy(race.race_attributes)
 
 
         # create simulations for procurement of ex-ante odds for priveledged betters
-        createExAnteOdds(compPool)
+        createExAnteOdds(compPool, raceAttributes)
 
         race.run("core")
         numberOfTimesteps = race.numberOfTimesteps

@@ -24,44 +24,109 @@ betting success
 '''
 
 index = 0
-exAnteOdds = []
+agents = {}
+exAnteOdds = {}
+adaptedCompPools = {}
+raceAttributes = None
 
-def createExAnteOdds(compPool):
-    print("BANG BANG")
-    numOfSimulations = 100
+def createAdaptedCompPools(compPool, numOfPriveledgedBettors):
+    disturbances = []
+    for i in range(1, numOfPriveledgedBettors+1):
+        disturbances.append((0.1*numOfPriveledgedBettors) / i)
+
+    adaptedViewOfCompPool = deepcopy(compPool)
+    for i in range(numOfPriveledgedBettors):
+        pool = deepcopy(adaptedViewOfCompPool)
+        for c in pool:
+            c.alignment = c.alignment + (random.uniform(-disturbances[i], disturbances[i]))
+        adaptedCompPools[i] = pool
+
+
+def createOdds(index, compPool, numOfSimulations, raceState = None):
+    pool = deepcopy(compPool)
+    if raceState != None:
+        for c in pool:
+            c.distance = float(raceState[c.id])
+
+    oddsOfWinning = [0] * len(compPool)
+
+    for j in range(numOfSimulations):
+        p  = deepcopy(pool)
+        j = Simulator(NUM_OF_COMPETITORS, p, raceAttributes)
+        j.run(None)
+        oddsOfWinning[j.winner] = oddsOfWinning[j.winner] + 1
+    oddsOfWinning[:] = [o / len(compPool) for o in oddsOfWinning]
+    if raceState != None:
+        return oddsOfWinning
+    else:
+        exAnteOdds[index] = oddsOfWinning
+
+def createExAnteOdds(compPool, attributes):
+    global raceAttributes
+    raceAttributes = attributes
     numOfPriveledgedBettors = 0
     for agent in config.agents:
         type = agent[0]
         if type == 'Priveledged':
             numOfPriveledgedBettors = agent[1]
             break
-
-    disturbances = []
-    for i in range(1, numOfPriveledgedBettors+1):
-        disturbances.append((0.1*numOfPriveledgedBettors) / i)
-
-    adaptedViewOfCompPool = deepcopy(compPool)
-
+    createAdaptedCompPools(compPool, numOfPriveledgedBettors)
     for i in range(numOfPriveledgedBettors):
-        pool = deepcopy(adaptedViewOfCompPool)
-        for c in pool:
-            c.alignment = c.alignment + (random.uniform(-disturbances[i], disturbances[i]))
-        oddsOfWinning = [0] * len(compPool)
-
-        for j in range(numOfSimulations):
-            p  = deepcopy(pool)
-            j = Simulator(NUM_OF_COMPETITORS, p)
-            j.run(None)
-            #print(j.winner)
-            oddsOfWinning[j.winner] = oddsOfWinning[j.winner] + 1
-        oddsOfWinning[:] = [o / len(compPool) for o in oddsOfWinning]
-        print(oddsOfWinning)
-        exAnteOdds.append(oddsOfWinning)
+        createOdds(i, adaptedCompPools[i], 100)
 
 
-def getExAnteOdds():
+def getExAnteOdds(agentId):
     global index
-    odds = exAnteOdds[index]
+    agents[agentId] = index
     index = index + 1
-    print("INDEX: " + str(index))
-    return odds
+    return exAnteOdds[agents[agentId]]
+
+def getInPlayOdds(agentId, raceState):
+    i = agents[agentId]
+    pool = deepcopy(adaptedCompPools[i])
+    return createOdds(i, pool, 1, raceState)
+
+
+
+
+
+
+# def createExAnteOdds(compPool):
+#     print("BANG BANG")
+#     numOfSimulations = 100
+#     numOfPriveledgedBettors = 0
+#     for agent in config.agents:
+#         type = agent[0]
+#         if type == 'Priveledged':
+#             numOfPriveledgedBettors = agent[1]
+#             break
+#
+#     disturbances = []
+#     for i in range(1, numOfPriveledgedBettors+1):
+#         disturbances.append((0.1*numOfPriveledgedBettors) / i)
+#
+#     adaptedViewOfCompPool = deepcopy(compPool)
+#
+#     for i in range(numOfPriveledgedBettors):
+#         pool = deepcopy(adaptedViewOfCompPool)
+#         for c in pool:
+#             c.alignment = c.alignment + (random.uniform(-disturbances[i], disturbances[i]))
+#         oddsOfWinning = [0] * len(compPool)
+#
+#         for j in range(numOfSimulations):
+#             p  = deepcopy(pool)
+#             j = Simulator(NUM_OF_COMPETITORS, p)
+#             j.run(None)
+#             #print(j.winner)
+#             oddsOfWinning[j.winner] = oddsOfWinning[j.winner] + 1
+#         oddsOfWinning[:] = [o / len(compPool) for o in oddsOfWinning]
+#         print(oddsOfWinning)
+#         exAnteOdds.append(oddsOfWinning)
+
+#
+# def getExAnteOdds():
+#     global index
+#     odds = exAnteOdds[index]
+#     index = index + 1
+#     print("INDEX: " + str(index))
+#     return odds
