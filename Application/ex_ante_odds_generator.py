@@ -55,7 +55,14 @@ def createOdds(index, compPool, numOfSimulations, raceState = None):
         j = Simulator(NUM_OF_COMPETITORS, p, raceAttributes)
         j.run(None)
         oddsOfWinning[j.winner] = oddsOfWinning[j.winner] + 1
-    oddsOfWinning[:] = [o / len(compPool) for o in oddsOfWinning]
+    #print(oddsOfWinning)
+    for i in range(len(oddsOfWinning)):
+        if oddsOfWinning[i] == 0: oddsOfWinning[i] = -1
+        else:
+            p = (oddsOfWinning[i] / numOfSimulations) * 100
+            oddsOfWinning[i] = 100 / p
+    #print(oddsOfWinning)
+    #oddsOfWinning[:] = [(100 / (o / numOfSimulations)) for o in oddsOfWinning]
     if raceState != None:
         return oddsOfWinning
     else:
@@ -79,6 +86,7 @@ def getExAnteOdds(agentId):
     global index
     agents[agentId] = index
     index = index + 1
+    print(index)
     return exAnteOdds[agents[agentId]]
 
 def getInPlayOdds(agentId, raceState):

@@ -347,6 +347,8 @@ class Agent_Priveledged(BettingAgent):
     def __init__(self, id, name, lengthOfRace, endOfInPlayBettingPeriod):
         BettingAgent.__init__(self, id, name, lengthOfRace, endOfInPlayBettingPeriod)
         self.exAnteOdds = getExAnteOdds(self.id)
+        self.betPreRace = False
+        self.updateInterval = random.randint(10,20)
 
 
         print("AGENT ID: " + str(self.id) + " " + str(self.id) + " Ex Ante Odds Pred: " + str(self.exAnteOdds))
@@ -355,7 +357,7 @@ class Agent_Priveledged(BettingAgent):
         for i in range(len(self.exAnteOdds)):
             odds = self.exAnteOdds[i]
             direction = 'Back'
-            if int(odds) == 0:
+            if odds == -1:
                 direction = 'Lay'
                 odds = MAX_ODDS
 
@@ -364,16 +366,30 @@ class Agent_Priveledged(BettingAgent):
             #print("AGENT " + str(self.id) + ": " + str(order))
 
     def getInPlayOrder(self, time, markets):
-        odds = getInPlayOdds(self.id, self.currentRaceState)
-        #print(odds)
-        return
+        order = None
+        if (self.raceTimestep % self.updateInterval) == 0:
+            odds = getInPlayOdds(self.id, self.currentRaceState)
+            winner = None
+            winnerOdds = -1
+            for i in range(len(odds)):
+                if odds[i] > winnerOdds:
+                    winner = i
+                    winnerOdds = odds[i]
+            quoteodds = MIN_ODDS
+            if markets[self.exchange][winner]['backs']['n'] > 0:
+                quoteodds = max(MIN_ODDS, markets[self.exchange][winner]['backs']['best'] - 0.1)
+            else:
+                quoteodds = markets[self.exchange][winner]['backs']['worst']
+            order = Order(self.exchange, self.id, winner, 'Back', quoteodds, 1, markets[self.exchange][winner]['QID'], time)
+        return order
 
     def getorder(self, time, markets):
         order = None
         if self.bettingPeriod == False: return order
-        if self.raceStarted == False:
+        if self.raceStarted == False and self.betPreRace == False:
             self.getExAnteOrder(time, markets)
-        else:
+            self.betPreRace = True
+        elif self.raceStarted == True:
             self.getInPlayOrder(time, markets)
 
         if len(self.orders) > 0:
