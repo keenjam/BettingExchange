@@ -14,6 +14,7 @@ def raceEventPlot(filename):
     for i in range(1, NUM_OF_COMPETITORS+1):
         ys.append(i)
     dataframe.plot(x = "Time", y = ys, kind="line")
+    plt.savefig('J')
     plt.show()
 
 

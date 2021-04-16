@@ -234,7 +234,7 @@ class Agent_Back_Favourite(BettingAgent):
                 if bestodds < lowestOdds:
                     lowestOdds = bestodds
                     marketsFave = comp
-        #print("MARKET FAVE IS: " + str(marketsFave))
+        print("MARKET FAVE IS: " + str(marketsFave))
 
 
         if marketsFave == self.marketsFave:
@@ -321,12 +321,10 @@ class Agent_Linex(BettingAgent):
                 quoteodds = max(MIN_ODDS, markets[self.exchange][self.predictedWinner]['backs']['best'] - 0.1)
             else:
                 quoteodds = markets[self.exchange][self.predictedWinner]['backs']['worst']
-                print("WORST ODDS: " + str(quoteodds))
             order = Order(self.exchange, self.id, self.predictedWinner, 'Back', quoteodds, 1, markets[self.exchange][self.predictedWinner]['QID'], time)
             self.job = "lay_pred_loser"
 
         elif self.job == 'lay_pred_loser':
-            print("LAYING: " +str(self.predictedLoser))
             if markets[self.exchange][self.predictedLoser]['lays']['n'] > 0:
                 quoteodds = markets[self.exchange][self.predictedLoser]['lays']['best'] + 0.1
             else:
@@ -377,6 +375,7 @@ class Agent_Priveledged(BettingAgent):
                     winnerOdds = odds[i]
             quoteodds = MIN_ODDS
             if markets[self.exchange][winner]['backs']['n'] > 0:
+                #print(markets[self.exchange][winner]['backs'])
                 quoteodds = max(MIN_ODDS, markets[self.exchange][winner]['backs']['best'] - 0.1)
             else:
                 quoteodds = markets[self.exchange][winner]['backs']['worst']
