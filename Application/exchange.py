@@ -47,18 +47,17 @@ class OrderbookHalf:
 		# also builds anonymized version (just price/quantity, sorted, as a list) for publishing to betting agents
 		self.market = {}
 
-		for key, orderL in self.orders.items():
-			for order in orderL:
-				odds = order.odds
-				if odds in self.market:
-					# update existing entry
-					stake = self.market[odds][0]
-					orderList = self.market[odds][1]
-					orderList.append([order.timestamp, order.stake, order.agentId, order.orderId])
-					self.market[odds] = [stake + order.stake, orderList]
-				else:
-					# create a new dictionary entry
-					self.market[odds] = [order.stake, [[order.timestamp, order.stake, order.agentId, order.orderId]]]
+		for key, order in self.orders.items():
+			odds = order.odds
+			if odds in self.market:
+				# update existing entry
+				stake = self.market[odds][0]
+				orderList = self.market[odds][1]
+				orderList.append([order.timestamp, order.stake, order.agentId, order.orderId])
+				self.market[odds] = [stake + order.stake, orderList]
+			else:
+				# create a new dictionary entry
+				self.market[odds] = [order.stake, [[order.timestamp, order.stake, order.agentId, order.orderId]]]
 		# create anonymized version
 		self.anonymiseMarket()
 		# record best price and associated betting agent id
@@ -89,12 +88,14 @@ class OrderbookHalf:
 		# checks whether length or order list has changed, to distinguish addition/overwrite
 
 		numOfOrdersBefore = self.numOfOrders
-		if order.agentId not in self.orders:
-			self.orders[order.agentId] = [order]
-		else:
-			self.orders[order.agentId].append(order)
+		self.orders[order.agentId] = order
 		self.numOfOrders = len(self.orders)
 		self.buildMarket()
+
+		if numOfOrdersBefore != self.numOfOrders :
+			return('Addition')
+		else:
+			return('Overwrite')
 
 
 
@@ -107,13 +108,9 @@ class OrderbookHalf:
 		# checks that the Trader ID does actually exist in the dict before deletion
 
 		if self.orders.get(order.agentId) != None :
-			for k, v in self.orders.items():
-				if k == order.agentId and v.orderId == order.orderId:
-					del(self.orders[order.agentId])
-					self.numOfOrders = len(self.orders)
-					self.buildMarket()
-					return
-		print("COULD NOT FIND ORDER!")
+			del(self.orders[order.agentId])
+			self.numOfOrders = len(self.orders)
+			self.buildMarket()
 
 
 	def bookDeleteBest(self):
@@ -189,16 +186,16 @@ class Exchange(Orderbook):
 		orderbook.quoteId = order.orderId + 1
 
 		if order.direction == 'Back':
-			orderbook.backs.bookAddOrder(order)
+			response = orderbook.backs.bookAddOrder(order)
 			bestOdds = orderbook.backs.anonymisedMarket[0][0]
 			orderbook.backs.bestOdds = bestOdds
 			orderbook.backs.bestAgentId = orderbook.backs.market[bestOdds][1][0][2]
 		else:
-			orderbook.lays.bookAddOrder(order)
+			response = orderbook.lays.bookAddOrder(order)
 			bestOdds = orderbook.lays.anonymisedMarket[-1][0]
 			orderbook.lays.bestOdds = bestOdds
 			orderbook.lays.bestAgentId = orderbook.lays.market[bestOdds][1][0][2]
-		return order.orderId
+		return [order.orderId, response]
 
 
 	def delOrder(self, time, order):
@@ -285,8 +282,12 @@ class Exchange(Orderbook):
 		orderOdds = order.odds
 		counterparty = None
 		#counter_coid = None
-		orderId = self.addOrder(order)  # add it to the order lists -- overwriting any previous order
+		[orderId, response] = self.addOrder(order)  # add it to the order lists -- overwriting any previous order
 		order.orderId = orderId
+		if EXCHANGE_VERBOSE :
+			print("Order ID: " + str(order.orderId))
+			print("Reponse is: " + response)
+			print(order)
 		bestLay = orderbook.lays.bestOdds
 		bestLayAgentId = orderbook.lays.bestAgentId
 		bestBack = orderbook.backs.bestOdds
