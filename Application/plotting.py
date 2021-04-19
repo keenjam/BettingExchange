@@ -17,7 +17,13 @@ def raceEventPlot(filename):
     plt.savefig('J')
     plt.show()
 
-
+def privOddsPlot(filename):
+    dataframe = pd.read_csv(filename)
+    ys = []
+    for i in range(1, NUM_OF_COMPETITORS+1):
+        ys.append(i)
+    dataframe.plot(x = "Time", y = ys, drawstyle="steps")
+    plt.show()
 
 
 
@@ -44,6 +50,9 @@ def raceEventPlot(filename):
 def main():
     race_event_file = "race_event_core.csv"
     raceEventPlot(race_event_file)
+
+    comp_odds_file = "comp_odds_by_2.csv"
+    privOddsPlot(comp_odds_file)
 
 
 if __name__ == "__main__":

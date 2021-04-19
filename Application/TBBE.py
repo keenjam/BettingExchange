@@ -8,6 +8,7 @@ from race_simulator import Simulator
 from ex_ante_odds_generator import *
 from exchange import Exchange
 from message_protocols import *
+from session_stats import *
 
 def exchangeLogic(exchange, exchangeOrderQ, bettingAgentQs, event, startTime, numberOfTimesteps):
     """
@@ -51,8 +52,8 @@ def agentLogic(agent, agentQ, exchanges, exchangeOrderQs, event, startTime, numb
         while agentQ.empty() is False:
             qItem = agentQ.get(block = False)
             if qItem.protocolNum == EXCHANGE_UPDATE_MSG_NUM:
-                if qItem.trade['backer'] == agent.id: agent.bookkeep(qItem.trade, qItem.order, timeInEvent)
-                if qItem.trade['layer'] == agent.id: agent.bookkeep(qItem.trade, qItem.order, timeInEvent)
+                if qItem.trade['backer'] == agent.id: agent.bookkeep(qItem.trade, 'Backer', qItem.order, timeInEvent)
+                if qItem.trade['layer'] == agent.id: agent.bookkeep(qItem.trade, 'Layer', qItem.order, timeInEvent)
             elif qItem.protocolNum == RACE_UPDATE_MSG_NUM:
                 agent.observeRaceState(qItem.timestep, qItem.compDistances)
             else:
@@ -233,6 +234,8 @@ def eventSession(simulationId, event, numberOfTimesteps, lengthOfRace, winningCo
         for orderbook in ex.compOrderbooks:
             for trade in orderbook.tape:
                 print(trade)
+
+    createstats(bettingAgents)
 
     # Settle up all transactions over all exchanges
     for id, ex in exchanges.items():

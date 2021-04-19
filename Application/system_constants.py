@@ -14,8 +14,8 @@ EXCHANGE_UPDATE_MSG_NUM = 1
 RACE_UPDATE_MSG_NUM = 2
 
 # Exchange Attributes
-MIN_ODDS = 0.01
-MAX_ODDS = 100.00
+MIN_ODDS = 1.1
+MAX_ODDS = 20.00
 
 # Print-Outs
 TBBE_VERBOSE = False

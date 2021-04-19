@@ -57,7 +57,7 @@ def createOdds(index, compPool, numOfSimulations, raceState = None):
         oddsOfWinning[j.winner] = oddsOfWinning[j.winner] + 1
     #print(oddsOfWinning)
     for i in range(len(oddsOfWinning)):
-        if oddsOfWinning[i] == 0: oddsOfWinning[i] = -1
+        if oddsOfWinning[i] == 0: oddsOfWinning[i] = MAX_ODDS
         else:
             p = (oddsOfWinning[i] / numOfSimulations) * 100
             oddsOfWinning[i] = 100 / p
@@ -79,7 +79,7 @@ def createExAnteOdds(compPool, attributes):
             break
     createAdaptedCompPools(compPool, numOfPriveledgedBettors)
     for i in range(numOfPriveledgedBettors):
-        createOdds(i, adaptedCompPools[i], 100)
+        createOdds(i, adaptedCompPools[i], 20)
 
 
 def getExAnteOdds(agentId):
@@ -92,7 +92,7 @@ def getExAnteOdds(agentId):
 def getInPlayOdds(agentId, raceState):
     i = agents[agentId]
     pool = deepcopy(adaptedCompPools[i])
-    return createOdds(i, pool, 1, raceState)
+    return createOdds(i, pool, 20, raceState)
 
 
 

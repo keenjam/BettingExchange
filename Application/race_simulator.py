@@ -171,7 +171,7 @@ class Simulator:
         blockers = []
         cTempDist = c.distance + increases[c.id]
         for other in self.competitors:
-            if other == c: continue
+            if other == c or other in self.injuredCompetitors: continue
             otherTempDist = other.distance + increases[other.id]
             if c.distance <= other.distance and c.distance >= other.distance - 5:
                 blockers.append((other.id, otherTempDist))
