@@ -22,7 +22,6 @@ def priv_bettor_odds(bettingAgents):
 
     for b in privBettors:
         fileName = "comp_odds_by_" + str(b.id) + ".csv"
-        print(b.oddsData)
         with open(fileName, 'w', newline = '') as file:
             writer = csv.writer(file)
             writer.writerow(header)

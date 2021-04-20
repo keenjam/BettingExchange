@@ -59,11 +59,11 @@ def privOddsPlot(filename):
 
 
 def main():
-#    racePlotsForDave()
+    #racePlotsForDave()
     race_event_file = "data/race_event_core.csv"
     raceEventPlot(race_event_file)
 
-    comp_odds_file = "comp_odds_by_5.csv"
+    comp_odds_file = "comp_odds_by_4.csv"
     privOddsPlot(comp_odds_file)
 
 

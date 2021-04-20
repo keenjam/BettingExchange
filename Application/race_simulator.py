@@ -165,10 +165,10 @@ class Simulator:
 
 
         def finalStretch(self, c):
+            if c.id in self.finished: return
             if c.distance >= self.race_attributes.length - self.finalStretchDist[self.race_attributes.race_type] and c.id not in self.finalStretchIncreases:
                 # in final stretch
-                distanceLeft = int(self.race_attributes.length - c.distance)
-
+                distanceLeft = float(self.race_attributes.length - c.distance)
                 energyLeft = int(c.energy / distanceLeft)
                 buildUp = energyLeft / distanceLeft
                 # multiply buildUp by 2 for more dramatic race events
@@ -180,7 +180,8 @@ class Simulator:
         # if race is long then competitors should have lower responsiveness at start and middle with burst at end
         # if race is short then competitors should have resonably consistent responsiveness throughout
         for c in self.competitors:
-            if c in self.injuredCompetitors or c in self.finished: continue
+            if c in self.injuredCompetitors or c.id in self.finished:
+                continue
             if injury(self) == True:
                 c.responsiveness = 0
                 self.injuredCompetitors.append(c)

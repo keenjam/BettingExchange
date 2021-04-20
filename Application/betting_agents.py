@@ -352,7 +352,7 @@ class Agent_Priveledged(BettingAgent):
         BettingAgent.__init__(self, id, name, lengthOfRace, endOfInPlayBettingPeriod)
         self.exAnteOdds = getExAnteOdds(self.id)
         self.betPreRace = False
-        self.updateInterval = 1
+        self.updateInterval = 10
 
         self.BidOdds = []
         self.LayOdds = []
@@ -384,13 +384,14 @@ class Agent_Priveledged(BettingAgent):
     def getInPlayOrder(self, time, markets):
         order = None
         if (self.raceTimestep % self.updateInterval) == 0:
-            odds = getInPlayOdds(self.id, self.currentRaceState)
+            odds = getInPlayOdds(self.raceTimestep, self.id)
             # plotting code
             row = [self.raceTimestep]
             for i in range(len(odds)):
                 row.append(odds[i])
             self.oddsData.append(row)
             ##
+            print("AGENT ID: " + str(self.id) + " " + str(self.id) + " In Play Odds Pred: " + str(row))
             winner = None
             winnerOdds = MAX_ODDS
             for i in range(len(odds)):

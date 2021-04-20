@@ -26,8 +26,21 @@ betting success
 index = 0
 agents = {}
 exAnteOdds = {}
+inPlayOdds = {}
 adaptedCompPools = {}
 raceAttributes = None
+
+
+def observeRace(timestep):
+    with open(RACE_DATA_FILENAME, 'r') as file:
+        reader = csv.reader(file)
+        r = [row for index, row in enumerate(reader) if index == timestep]
+    time = r[0][0]
+    compDistances = {}
+    for c in range(NUM_OF_COMPETITORS):
+        compDistances[c] = float(r[0][c+1])
+
+    return compDistances
 
 def createAdaptedCompPools(compPool, numOfPriveledgedBettors):
     disturbances = []
@@ -42,9 +55,11 @@ def createAdaptedCompPools(compPool, numOfPriveledgedBettors):
         adaptedCompPools[i] = pool
 
 
-def createOdds(index, compPool, numOfSimulations, raceState = None):
+def createOdds(ix, compPool, numOfSimulations, timestep = None, raceState = None):
+    global raceAttributes
     pool = deepcopy(compPool)
     if raceState != None:
+        raceLen = raceAttributes.length
         for c in pool:
             c.distance = float(raceState[c.id])
 
@@ -66,10 +81,15 @@ def createOdds(index, compPool, numOfSimulations, raceState = None):
             if oddsOfWinning[i] > MAX_ODDS: oddsOfWinning[i] = MAX_ODDS
     #print(oddsOfWinning)
     #oddsOfWinning[:] = [(100 / (o / numOfSimulations)) for o in oddsOfWinning]
-    if raceState != None:
-        return oddsOfWinning
+    if raceState != None and timestep != None:
+        if timestep not in inPlayOdds:
+            inPlayOdds[timestep] = [oddsOfWinning]
+        else:
+            inPlayOdds[timestep].append(oddsOfWinning)
     else:
-        exAnteOdds[index] = oddsOfWinning
+        exAnteOdds[ix] = oddsOfWinning
+
+
 
 def createExAnteOdds(compPool, attributes):
     global raceAttributes
@@ -82,20 +102,44 @@ def createExAnteOdds(compPool, attributes):
             break
     createAdaptedCompPools(compPool, numOfPriveledgedBettors)
     for i in range(numOfPriveledgedBettors):
-        createOdds(i, adaptedCompPools[i], 100)
+        createOdds(i, adaptedCompPools[i], 500)
 
+
+
+def createInPlayOdds(numberOfTimesteps):
+    numOfPriveledgedBettors = 0
+    for agent in config.agents:
+        type = agent[0]
+        if type == 'Priveledged':
+            numOfPriveledgedBettors = agent[1]
+            break
+
+    for t in range(numberOfTimesteps):
+        print(t)
+        for i in range(numOfPriveledgedBettors):
+            raceState = observeRace(t)
+            print(raceState)
+            pool = deepcopy(adaptedCompPools[i])
+
+            createOdds(i, pool, 500, t, raceState)
+
+
+
+
+# Getter functions for betting agents
 
 def getExAnteOdds(agentId):
     global index
+    global agents
     agents[agentId] = index
     index = index + 1
     print(index)
     return exAnteOdds[agents[agentId]]
 
-def getInPlayOdds(agentId, raceState):
-    i = agents[agentId]
-    pool = deepcopy(adaptedCompPools[i])
-    return createOdds(i, pool, 100, raceState)
+def getInPlayOdds(timestep, agentId):
+    odds = inPlayOdds[timestep]
+    return odds[agents[agentId]]
+
 
 
 

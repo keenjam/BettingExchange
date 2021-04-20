@@ -19,7 +19,7 @@ def exchangeLogic(exchange, exchangeOrderQ, bettingAgentQs, event, startTime, nu
     event.wait()
     # While event is running, run logic for exchange
     while event.isSet():
-        timeInEvent = (time.time() - startTime) * numberOfTimesteps
+        timeInEvent = (time.time() - startTime) / SESSION_SPEED_MULTIPLIER
 
         try: order = exchangeOrderQ.get(block=False)
         except: continue
@@ -45,7 +45,7 @@ def agentLogic(agent, agentQ, exchanges, exchangeOrderQs, event, startTime, numb
     # Whole event is running, run logic for betting agents
     while event.isSet():
         time.sleep(0.01)
-        timeInEvent = (time.time() - startTime) * numberOfTimesteps
+        timeInEvent = (time.time() - startTime) / SESSION_SPEED_MULTIPLIER
         order = None
         trade = None
 
@@ -149,8 +149,7 @@ def updateRaceQ(bettingAgentQs, timestep):
 
 def preRaceBetPeriod(exchanges, startTime):
     print("Start of pre-race betting period, lasting " + str(PRE_RACE_BETTING_PERIOD_LENGTH))
-    for i in range(PRE_RACE_BETTING_PERIOD_LENGTH):
-        time.sleep(0.01)
+    time.sleep(PRE_RACE_BETTING_PERIOD_LENGTH / SESSION_SPEED_MULTIPLIER)
     print("End of pre-race betting period")
     # marketUpdates = {}
     # for id, ex in exchanges.items():
@@ -193,6 +192,8 @@ def eventSession(simulationId, event, numberOfTimesteps, lengthOfRace, winningCo
     # Initialise event
     event.set()
 
+    time.sleep(0.01)
+
     # Pre-race betting period
     preRaceBetPeriod(exchanges, startTime)
 
@@ -217,7 +218,7 @@ def eventSession(simulationId, event, numberOfTimesteps, lengthOfRace, winningCo
         #        winner = race.competitors[i].id
         #        print("WINNER: " + str(winner))
 
-        time.sleep(1)
+        time.sleep(1 / SESSION_SPEED_MULTIPLIER)
 
 
     # End event
@@ -274,6 +275,8 @@ def main():
         lengthOfRace = race.race_attributes.length
         winningCompetitor = race.winner
         endOfInPlayBettingPeriod = race.winningTimestep - IN_PLAY_CUT_OFF_PERIOD
+
+        createInPlayOdds(numberOfTimesteps)
 
 
 
