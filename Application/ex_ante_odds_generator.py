@@ -102,7 +102,7 @@ def createExAnteOdds(compPool, attributes):
             break
     createAdaptedCompPools(compPool, numOfPriveledgedBettors)
     for i in range(numOfPriveledgedBettors):
-        createOdds(i, adaptedCompPools[i], 500)
+        createOdds(i, adaptedCompPools[i], 200)
 
 
 
@@ -121,7 +121,7 @@ def createInPlayOdds(numberOfTimesteps):
             print(raceState)
             pool = deepcopy(adaptedCompPools[i])
 
-            createOdds(i, pool, 500, t, raceState)
+            createOdds(i, pool, 200, t, raceState)
 
 
 
