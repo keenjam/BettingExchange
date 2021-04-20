@@ -14,8 +14,8 @@ def raceEventPlot(filename):
     for i in range(1, NUM_OF_COMPETITORS+1):
         ys.append(i)
     dataframe.plot(x = "Time", y = ys, kind="line")
-    plt.savefig('J')
     plt.show()
+    #sns.lineplot( data=dataframe)
 
 def privOddsPlot(filename):
     dataframe = pd.read_csv(filename)
@@ -51,7 +51,7 @@ def main():
     race_event_file = "race_event_core.csv"
     raceEventPlot(race_event_file)
 
-    comp_odds_file = "comp_odds_by_2.csv"
+    comp_odds_file = "comp_odds_by_5.csv"
     privOddsPlot(comp_odds_file)
 
 

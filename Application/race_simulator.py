@@ -99,7 +99,12 @@ class Simulator:
 
         comps = []
         for i in range(numOfCompetitors):
-            comps.append(Competitor(i, self.race_attributes))
+            found = False
+            while(found == False):
+                c = Competitor(i, self.race_attributes)
+                if c.alignment >= 0.95:
+                    found = True
+            comps.append(c)
 
         return comps
 
@@ -205,10 +210,10 @@ class Simulator:
         """ Update race state by updating distance variable of Competitor objects """
         increases = {}
         for c in self.competitors:
-            increase = c.responsiveness * (c.alignment * random.randint(c.speed[0], c.speed[1]))
+            increase = c.consistency * c.responsiveness * (c.alignment * random.randint(c.speed[0], c.speed[1]))
             increases[c.id] = increase
 
-
+        winners = []
         for c in self.competitors:
             if c in self.injuredCompetitors or c.id in self.finished: continue
             cappedDist = self.calcInterference(c, increases)
@@ -217,9 +222,14 @@ class Simulator:
             # check if moved into next stage of race
             if c.distance >= self.race_attributes.length:
                 if self.winner == None:
-                    self.winner = c.id
+                    winners.append(c.id)
+                    #self.winner = c.id
                     self.winningTimestep = timestamp
                 if c.id not in self.finished: self.finished.append(c.id)
+
+        if len(winners) > 0:
+            r = random.randint(0, len(winners)-1)
+            self.winner = winners[r]
 
         # update competitor attributes
         self.updateEnergy(increases)

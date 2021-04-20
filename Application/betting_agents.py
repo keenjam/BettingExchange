@@ -78,18 +78,12 @@ class Agent_Random(BettingAgent):
             if(b == 0):
                 quoteodds = MIN_ODDS
                 if markets[e][c]['lays']['n'] > 0:
-                    print("NUM: " + str(markets[e][c]['lays']['n']))
-                    print("MARKET: " + str(markets[e][c]['lays']))
-                    print(markets[e][c]['lays']['best'])
                     quoteodds = markets[e][c]['lays']['best']
                     order = Order(e, self.id, c, 'Back', quoteodds, 1, markets[e][c]['QID'], time)
                 #print("BACK MADE BY AGENT " + str(self.id))
             else:
                 quoteodds = MAX_ODDS
                 if markets[e][c]['backs']['n'] > 0:
-                    print("NUM: " + str(markets[e][c]['backs']['n']))
-                    print("MARKET: " + str(markets[e][c]['backs']))
-                    print(markets[e][c]['backs']['best'])
                     quoteodds = markets[e][c]['backs']['best']
                     order = Order(e, self.id, c, 'Lay', quoteodds, 1, markets[e][c]['QID'], time)
                 #print("LAY MADE BY AGENT " + str(self.id))

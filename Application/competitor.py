@@ -1,4 +1,5 @@
 import random, math, statistics
+import numpy as np
 from system_constants import *
 
 '''
@@ -63,16 +64,20 @@ class Competitor:
         self.preferences = CompetitorPreferences()
         self.race_attributes = race_attributes
         self.alignment = self.calculateAlignment()
+        #self.alignment = 1
+
+        self.consistency = random.gauss(1, 0.1)
 
 
 
     def initVariables(self):
-        speedLower = random.randint(12, 15)
-        speedHigher = random.randint(16, 19)
+        speedLower = random.randint(9, 12)
+        speedHigher = random.randint(13, 16)
         self.speed = (speedLower, speedHigher)
         self.running_style = random.choice(["frontrunner", "stalker", "closer", "all_rounder"])
         if self.running_style == "all_rounder": self.responsiveness = 1
         else: self.responsiveness = 0.8
+        #self.responsiveness = 1
 
     def calculateAlignment(self):
         # CARTESIAN DIFFERENCE

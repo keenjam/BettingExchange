@@ -217,7 +217,7 @@ def eventSession(simulationId, event, numberOfTimesteps, lengthOfRace, winningCo
         #        winner = race.competitors[i].id
         #        print("WINNER: " + str(winner))
 
-        time.sleep(0.01)
+        time.sleep(1)
 
 
     # End event

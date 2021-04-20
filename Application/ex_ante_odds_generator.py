@@ -32,7 +32,7 @@ raceAttributes = None
 def createAdaptedCompPools(compPool, numOfPriveledgedBettors):
     disturbances = []
     for i in range(1, numOfPriveledgedBettors+1):
-        disturbances.append((0.1*numOfPriveledgedBettors) / i)
+        disturbances.append((0.05*numOfPriveledgedBettors) / i)
 
     adaptedViewOfCompPool = deepcopy(compPool)
     for i in range(numOfPriveledgedBettors):
@@ -52,6 +52,8 @@ def createOdds(index, compPool, numOfSimulations, raceState = None):
 
     for j in range(numOfSimulations):
         p  = deepcopy(pool)
+        for c in p:
+            c.consistency = random.gauss(1, 0.1)
         j = Simulator(NUM_OF_COMPETITORS, p, raceAttributes)
         j.run(None)
         oddsOfWinning[j.winner] = oddsOfWinning[j.winner] + 1
@@ -59,8 +61,9 @@ def createOdds(index, compPool, numOfSimulations, raceState = None):
     for i in range(len(oddsOfWinning)):
         if oddsOfWinning[i] == 0: oddsOfWinning[i] = MAX_ODDS
         else:
-            p = (oddsOfWinning[i] / numOfSimulations) * 100
-            oddsOfWinning[i] = 100 / p
+            p = (oddsOfWinning[i] / numOfSimulations)
+            oddsOfWinning[i] =  1 / p
+            if oddsOfWinning[i] > MAX_ODDS: oddsOfWinning[i] = MAX_ODDS
     #print(oddsOfWinning)
     #oddsOfWinning[:] = [(100 / (o / numOfSimulations)) for o in oddsOfWinning]
     if raceState != None:
@@ -79,7 +82,7 @@ def createExAnteOdds(compPool, attributes):
             break
     createAdaptedCompPools(compPool, numOfPriveledgedBettors)
     for i in range(numOfPriveledgedBettors):
-        createOdds(i, adaptedCompPools[i], 20)
+        createOdds(i, adaptedCompPools[i], 100)
 
 
 def getExAnteOdds(agentId):
@@ -92,7 +95,7 @@ def getExAnteOdds(agentId):
 def getInPlayOdds(agentId, raceState):
     i = agents[agentId]
     pool = deepcopy(adaptedCompPools[i])
-    return createOdds(i, pool, 20, raceState)
+    return createOdds(i, pool, 100, raceState)
 
 
 
