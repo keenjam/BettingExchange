@@ -1,13 +1,14 @@
 # System constants used across BBE
 
 # General
+NUM_OF_SIMS = 12
 NUM_OF_COMPETITORS = 5
 NUM_OF_EXCHANGES = 1
 PRE_RACE_BETTING_PERIOD_LENGTH = 120
 IN_PLAY_CUT_OFF_PERIOD = 3
 
 # Data Store Attributes
-RACE_DATA_FILENAME = 'race_event_core.csv'
+RACE_DATA_FILENAME = 'data/race_event_core.csv'
 
 # Message Protocol Numbers
 EXCHANGE_UPDATE_MSG_NUM = 1

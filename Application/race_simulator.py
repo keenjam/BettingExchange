@@ -111,6 +111,8 @@ class Simulator:
     def updateEnergy(self, increases):
         sortedComps = sorted(self.competitors, key = operator.attrgetter('distance'))
         for i in range(len(sortedComps)-1):
+            if random.randint(0, NUM_OF_COMPETITORS) == i:
+                sortedComps[i].energy = sortedComps[i].energy + 50
             # EFFECT OF DRAFTING DURING THE RACE
             # 5 and 0.83 chosen as defined by https://royalsocietypublishing.org/doi/10.1098/rsbl.2011.1120
             if sortedComps[i+1].distance <= sortedComps[i].distance + 5:
@@ -129,23 +131,36 @@ class Simulator:
             else: return False
 
         def runningStyleImpact(self, c):
+            sortedComps = sorted(self.competitors, key = operator.attrgetter('distance'))
+            topThird = []
+            middleThird = []
+            bottomThird = []
+            topRange = (int((NUM_OF_COMPETITORS / 3) * 2), NUM_OF_COMPETITORS)
+            middleRange = (int((NUM_OF_COMPETITORS / 3)), int((NUM_OF_COMPETITORS / 3) * 2))
+            bottomRange = (0, int((NUM_OF_COMPETITORS / 3)))
+            for i in range(bottomRange[0], bottomRange[1]): bottomThird.append(sortedComps[i])
+            for i in range(middleRange[0], middleRange[1]): middleThird.append(sortedComps[i])
+            for i in range(topRange[0], topRange[1]): topThird.append(sortedComps[i])
             if self.raceSplit['start'][0] <= c.distance <= self.raceSplit['start'][1]:
-                if c.running_style == "frontrunner" and c.id not in self.runningStyleImpactChanged:
-                    c.responsiveness = c.responsiveness * 1.4
-                    self.runningStyleImpactChanged.append(c.id)
+                if c in topThird:
+                    if c.running_style == "frontrunner" and c.id not in self.runningStyleImpactChanged:
+                        c.responsiveness = c.responsiveness * random.gauss(1.2, 0.05)
+                        self.runningStyleImpactChanged.append(c.id)
             if self.raceSplit['middle'][0] <= c.distance <= self.raceSplit['middle'][1]:
-                if c.running_style == "stalker" and c.id not in self.runningStyleImpactChanged:
-                    c.responsiveness = c.responsiveness * 1.4
-                    self.runningStyleImpactChanged.append(c.id)
+                if c in middleThird:
+                    if c.running_style == "stalker" and c.id not in self.runningStyleImpactChanged:
+                        c.responsiveness = c.responsiveness * random.gauss(1.2, 0.05)
+                        self.runningStyleImpactChanged.append(c.id)
                 if c.running_style == "frontrunner" and c.id in self.runningStyleImpactChanged:
-                    c.responsiveness = c.responsiveness / 1.4
+                    c.responsiveness = c.responsiveness / random.gauss(1.2, 0.05)
                     self.runningStyleImpactChanged.remove(c.id)
             if self.raceSplit['end'][0] <= c.distance <= self.raceSplit['end'][1]:
-                if c.running_style == "closer" and c.id not in self.runningStyleImpactChanged:
-                    c.responsiveness = c.responsiveness * 1.4
-                    self.runningStyleImpactChanged.append(c.id)
+                if c in bottomThird or c in middleThird:
+                    if c.running_style == "closer" and c.id not in self.runningStyleImpactChanged:
+                        c.responsiveness = c.responsiveness * random.gauss(1.1, 0.05)
+                        self.runningStyleImpactChanged.append(c.id)
                 if c.running_style == "stalker" and c.id in self.runningStyleImpactChanged:
-                    c.responsiveness = c.responsiveness / 1.4
+                    c.responsiveness = c.responsiveness / random.gauss(1.1, 0.05)
                     self.runningStyleImpactChanged.remove(c.id)
 
 
@@ -153,6 +168,7 @@ class Simulator:
             if c.distance >= self.race_attributes.length - self.finalStretchDist[self.race_attributes.race_type] and c.id not in self.finalStretchIncreases:
                 # in final stretch
                 distanceLeft = int(self.race_attributes.length - c.distance)
+
                 energyLeft = int(c.energy / distanceLeft)
                 buildUp = energyLeft / distanceLeft
                 # multiply buildUp by 2 for more dramatic race events
@@ -200,9 +216,14 @@ class Simulator:
             return minBlockDist
 
 
+    def dynamicDistractions(self, c):
+        def stumble():
+            if random.randint(1,100) == 50: return float(random.gauss(0.6,0.1))
+            else: return 1
 
-
-
+        modifier = float(1)
+        modifier = modifier * stumble()
+        return modifier
 
 
 
@@ -210,7 +231,8 @@ class Simulator:
         """ Update race state by updating distance variable of Competitor objects """
         increases = {}
         for c in self.competitors:
-            increase = c.consistency * c.responsiveness * (c.alignment * random.randint(c.speed[0], c.speed[1]))
+            dynamicDistractions = self.dynamicDistractions(c)
+            increase = c.consistency * c.responsiveness * dynamicDistractions * (c.alignment * random.randint(c.speed[0], c.speed[1]))
             increases[c.id] = increase
 
         winners = []
@@ -266,7 +288,7 @@ class Simulator:
         for c in self.competitors:
             header.append(str(c.id))
 
-        fileName = "race_event_" + str(name) + ".csv"
+        fileName = "data/race_event_" + str(name) + ".csv"
         with open(fileName, 'w', newline = '') as file:
             writer = csv.writer(file)
             writer.writerow(header)

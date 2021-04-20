@@ -251,14 +251,13 @@ def eventSession(simulationId, event, numberOfTimesteps, lengthOfRace, winningCo
 def main():
     # Simulation attributes
     currentSimulation = 0
-    numOfSimulations = 1
     ####################
 
     # set things up
     # have while loop for running multiple races
     # within loop instantiate competitors into list
     # run simulation and matching engine
-    while currentSimulation < numOfSimulations:
+    while currentSimulation < NUM_OF_SIMS:
         simulationId = "Simulation: " + str(currentSimulation)
 
         # Create race event data

@@ -65,8 +65,8 @@ class Competitor:
         self.race_attributes = race_attributes
         self.alignment = self.calculateAlignment()
         #self.alignment = 1
-
-        self.consistency = random.gauss(1, 0.1)
+        consistencyStDev = random.gauss(0.1, 0.01)
+        self.consistency = random.gauss(1, consistencyStDev)
 
 
 
@@ -75,7 +75,7 @@ class Competitor:
         speedHigher = random.randint(13, 16)
         self.speed = (speedLower, speedHigher)
         self.running_style = random.choice(["frontrunner", "stalker", "closer", "all_rounder"])
-        if self.running_style == "all_rounder": self.responsiveness = 1
+        if self.running_style == "all_rounder": self.responsiveness = 0.85
         else: self.responsiveness = 0.8
         #self.responsiveness = 1
 

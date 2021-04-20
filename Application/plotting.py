@@ -7,6 +7,17 @@ import scipy
 import numpy as np
 from system_constants import *
 
+def racePlotsForDave():
+    for i in range(NUM_OF_SIMS):
+        filename = "data/race_event_" + str(i) + ".csv"
+        dataframe = pd.read_csv(filename)
+        ys = []
+        for i in range(1, NUM_OF_COMPETITORS+1):
+            ys.append(i)
+        dataframe.plot(x = "Time", y = ys, kind="line")
+        plt.show()
+
+
 def raceEventPlot(filename):
     dataframe = pd.read_csv(filename)
     print(dataframe)
@@ -48,7 +59,8 @@ def privOddsPlot(filename):
 
 
 def main():
-    race_event_file = "race_event_core.csv"
+#    racePlotsForDave()
+    race_event_file = "data/race_event_core.csv"
     raceEventPlot(race_event_file)
 
     comp_odds_file = "comp_odds_by_5.csv"
