@@ -29,9 +29,9 @@ class exchangeUpdate:
     """
     Protocol for transfer of trade information between exchange and betting agents
     """
-    def __init__(self, trade, order, markets):
+    def __init__(self, transactions, order, markets):
         self.protocolNum = EXCHANGE_UPDATE_MSG_NUM
-        self.trade = trade
+        self.transactions = transactions
         self.order = order
         self.markets = markets
 

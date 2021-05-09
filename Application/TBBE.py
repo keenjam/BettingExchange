@@ -24,11 +24,11 @@ def exchangeLogic(exchange, exchangeOrderQ, bettingAgentQs, event, startTime, nu
         try: order = exchangeOrderQ.get(block=False)
         except: continue
 
-        (trade, markets) = exchange.processOrder(timeInEvent, order)
+        (transactions, markets) = exchange.processOrder(timeInEvent, order)
 
-        if trade != None:
+        if transactions != None:
             for id, q in bettingAgentQs.items():
-                update = exchangeUpdate(trade, order, markets)
+                update = exchangeUpdate(transactions, order, markets)
                 q.put(update)
 
     print("CLOSING EXCHANGE " + str(exchange.id))
@@ -52,8 +52,9 @@ def agentLogic(agent, agentQ, exchanges, exchangeOrderQs, event, startTime, numb
         while agentQ.empty() is False:
             qItem = agentQ.get(block = False)
             if qItem.protocolNum == EXCHANGE_UPDATE_MSG_NUM:
-                if qItem.trade['backer'] == agent.id: agent.bookkeep(qItem.trade, 'Backer', qItem.order, timeInEvent)
-                if qItem.trade['layer'] == agent.id: agent.bookkeep(qItem.trade, 'Layer', qItem.order, timeInEvent)
+                for transaction in qItem.transactions:
+                    if transaction['backer'] == agent.id: agent.bookkeep(transaction, 'Backer', qItem.order, timeInEvent)
+                    if transaction['layer'] == agent.id: agent.bookkeep(transaction, 'Layer', qItem.order, timeInEvent)
             elif qItem.protocolNum == RACE_UPDATE_MSG_NUM:
                 agent.observeRaceState(qItem.timestep, qItem.compDistances)
             else:
@@ -100,6 +101,7 @@ def populateMarket(bettingAgents, lengthOfRace, endOfInPlayBettingPeriod):
         if name == 'Underdog': return Agent_Underdog(id, name, lengthOfRace, endOfInPlayBettingPeriod)
         if name == 'Back_Favourite': return Agent_Back_Favourite(id, name, lengthOfRace, endOfInPlayBettingPeriod)
         if name == 'Linex': return Agent_Linex(id, name, lengthOfRace, endOfInPlayBettingPeriod)
+        if name == 'Arbitrage': return Agent_Arbitrage(id, name, lengthOfRace, endOfInPlayBettingPeriod)
         if name == 'Priveledged': return Agent_Priveledged(id, name, lengthOfRace, endOfInPlayBettingPeriod)
 
     id = 0

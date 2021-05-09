@@ -63,7 +63,7 @@ def main():
     race_event_file = "data/race_event_core.csv"
     raceEventPlot(race_event_file)
 
-    comp_odds_file = "comp_odds_by_4.csv"
+    comp_odds_file = "comp_odds_by_2.csv"
     privOddsPlot(comp_odds_file)
 
 

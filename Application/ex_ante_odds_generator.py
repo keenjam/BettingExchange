@@ -23,12 +23,12 @@ betting success
 
 '''
 
-index = 0
 agents = {}
 exAnteOdds = {}
 inPlayOdds = {}
 adaptedCompPools = {}
 raceAttributes = None
+NUM_OF_PRIV_BETTORS = 0
 
 
 def observeRace(timestep):
@@ -93,6 +93,7 @@ def createOdds(ix, compPool, numOfSimulations, timestep = None, raceState = None
 
 def createExAnteOdds(compPool, attributes):
     global raceAttributes
+    global NUM_OF_PRIV_BETTORS
     raceAttributes = attributes
     numOfPriveledgedBettors = 0
     for agent in config.agents:
@@ -100,9 +101,10 @@ def createExAnteOdds(compPool, attributes):
         if type == 'Priveledged':
             numOfPriveledgedBettors = agent[1]
             break
+    NUM_OF_PRIV_BETTORS = numOfPriveledgedBettors
     createAdaptedCompPools(compPool, numOfPriveledgedBettors)
     for i in range(numOfPriveledgedBettors):
-        createOdds(i, adaptedCompPools[i], 200)
+        createOdds(i, adaptedCompPools[i], 10)
 
 
 
@@ -121,7 +123,7 @@ def createInPlayOdds(numberOfTimesteps):
             print(raceState)
             pool = deepcopy(adaptedCompPools[i])
 
-            createOdds(i, pool, 200, t, raceState)
+            createOdds(i, pool, 10, t, raceState)
 
 
 
@@ -129,11 +131,11 @@ def createInPlayOdds(numberOfTimesteps):
 # Getter functions for betting agents
 
 def getExAnteOdds(agentId):
-    global index
     global agents
-    agents[agentId] = index
-    index = index + 1
-    print(index)
+    # agent id is is agentid % NUM OF PRIVELEDGED BETTORS
+    agents[agentId] = agentId % NUM_OF_PRIV_BETTORS
+    # index = index + 1
+    #print(str(agentId) + " " + str(agents[agentId]))
     return exAnteOdds[agents[agentId]]
 
 def getInPlayOdds(timestep, agentId):

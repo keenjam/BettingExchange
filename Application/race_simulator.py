@@ -33,7 +33,7 @@ from competitor import Competitor
 class RaceAttributes:
     def __init__(self):
         self.race_type = ""
-        self.length = 0
+        self.length = 2000
         self.undulation = 0
         self.temperature = 0
         self.randomise()
@@ -41,7 +41,7 @@ class RaceAttributes:
         self.race_attributes_dict = self.createAttributeDict()
 
     def randomise(self):
-        self.length = random.randint(MIN_RACE_LENGTH, MAX_RACE_LENGTH)
+        #self.length = random.randint(MIN_RACE_LENGTH, MAX_RACE_LENGTH)
         self.undulation = random.randint(MIN_RACE_UNDULATION, MAX_RACE_UNDULATION)
         self.temperature = random.randint(MIN_RACE_TEMPERATURE, MAX_RACE_TEMPERATUE)
         if (self.length <= 1445): self.race_type = "short"

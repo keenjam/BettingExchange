@@ -340,6 +340,74 @@ class Agent_Linex(BettingAgent):
 
         return order
 
+class Agent_Arbitrage(BettingAgent):
+    '''
+    exploits opportunities for a garuanteed profit by exploiting the back and
+    lay odds shown on the different exchanges
+    '''
+    def __init__(self, id, name, lengthOfRace, endOfInPlayBettingPeriod):
+        BettingAgent.__init__(self, id, name, lengthOfRace, endOfInPlayBettingPeriod)
+
+    def getorder(self, time, markets):
+        order = None
+
+        return order
+
+    def respond(self, time, markets, trade):
+        # create list of best backs and lays for all competitors available on each exchange
+        # if back odds are 2.06 on exchange 0 and lay odds are 2.0 for same competitor on exchange 1
+        # then can back £100 on comp 1
+        # and lay (100 * 1.0206) £104.04 on comp 1
+
+
+        
+        # bestBacks = {}
+        # bestLays = {}
+        # for key, exchange in markets.items():
+        #     for id, comp in exchange.items():
+        #         if comp['backs']['best'] != None:
+        #             item = {}
+        #             item[id] = comp['backs']['best'])
+        #             bestBacks[key] = item
+        #         if comp['lays']['best'] != None:
+        #             item = {}
+        #             item[id] = comp['lays']['best'])
+        #             bestLays[key] = item
+        #
+        #
+        return
+
+# def respond(self, time, markets, trade):
+#     # DIMM buys and holds, sells as soon as it can make a "decent" profit
+#         # see what's on the LOB
+#     competitor = trade['competitor']
+#     if markets[self.exchange][competitor]['lays']['n'] > 0:
+#         bestlay = markets[self.exchange][competitor]['lays']['best']
+#         # try to buy a single unit at price of bestask+biddelta
+#         bidprice = bestask + self.bid_delta
+#         if bidprice < self.balance :
+#             # can afford it!
+#             # do this by issuing order to self, processed in getorder()
+#             order=Order(self.tid, 'Bid', bidprice, 1, time, lob['QID'])
+#             self.orders=[order]
+#             if verbose : print('DIMM01 Buy order=%s ' % ( order))
+#
+#     elif self.job == 'Sell':
+#         # is there at least one counterparty on the LOB?
+#         if lob['bids']['n'] > 0:
+#             # there is at least one bid on the LOB
+#             bestbid = lob['bids']['best']
+#             # sell single unit at price of purchaseprice+askdelta
+#             askprice = self.last_purchase_price + self.ask_delta
+#             if askprice < bestbid :
+#                 # seems we have a buyer
+#                 # do this by issuing order to self, processed in getorder()
+#                 order=Order(self.tid, 'Ask', askprice, 1, time, lob['QID'])
+#                 self.orders=[order]
+#                 if verbose : print('DIMM01 Sell order=%s ' % ( order))
+#     else :
+#         sys.exit('FATAL: DIMM01 doesn\'t know self.job type %s\n' % self.job)
+
 class Agent_Priveledged(BettingAgent):
     '''
     create reasonable ex ante odds for rest of bettors (no random till in play and then use best back/lay)
