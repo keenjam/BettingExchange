@@ -79,13 +79,13 @@ class Agent_Random(BettingAgent):
                 quoteodds = MIN_ODDS
                 if markets[e][c]['lays']['n'] > 0:
                     quoteodds = markets[e][c]['lays']['best']
-                    order = Order(e, self.id, c, 'Back', quoteodds, 1, markets[e][c]['QID'], time)
+                    order = Order(e, self.id, c, 'Back', quoteodds, random.randint(1,10), markets[e][c]['QID'], time)
                 #print("BACK MADE BY AGENT " + str(self.id))
             else:
                 quoteodds = MAX_ODDS
                 if markets[e][c]['backs']['n'] > 0:
                     quoteodds = markets[e][c]['backs']['best']
-                    order = Order(e, self.id, c, 'Lay', quoteodds, 1, markets[e][c]['QID'], time)
+                    order = Order(e, self.id, c, 'Lay', quoteodds, random.randint(1,10), markets[e][c]['QID'], time)
                 #print("LAY MADE BY AGENT " + str(self.id))
 
         return order
@@ -360,7 +360,7 @@ class Agent_Arbitrage(BettingAgent):
         # and lay (100 * 1.0206) £104.04 on comp 1
 
 
-        
+
         # bestBacks = {}
         # bestLays = {}
         # for key, exchange in markets.items():
