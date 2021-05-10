@@ -206,6 +206,7 @@ def eventSession(simulationId, event, numberOfTimesteps, lengthOfRace, winningCo
         updateRaceQ(bettingAgentQs, i+1)
         i = i+1
         if TBBE_VERBOSE: print(i)
+        print(i)
         # run simulation
         #race.updateRaceState()
         #race.saveRaceState(0)

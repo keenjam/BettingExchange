@@ -79,15 +79,14 @@ class Agent_Random(BettingAgent):
                 quoteodds = MIN_ODDS
                 if markets[e][c]['lays']['n'] > 0:
                     quoteodds = markets[e][c]['lays']['best']
-                    order = Order(e, self.id, c, 'Back', quoteodds, random.randint(1,10), markets[e][c]['QID'], time)
+                    order = Order(e, self.id, c, 'Back', quoteodds, random.randint(1,300), markets[e][c]['QID'], time)
                 #print("BACK MADE BY AGENT " + str(self.id))
             else:
                 quoteodds = MAX_ODDS
                 if markets[e][c]['backs']['n'] > 0:
                     quoteodds = markets[e][c]['backs']['best']
-                    order = Order(e, self.id, c, 'Lay', quoteodds, random.randint(1,10), markets[e][c]['QID'], time)
+                    order = Order(e, self.id, c, 'Lay', quoteodds, random.randint(1,300), markets[e][c]['QID'], time)
                 #print("LAY MADE BY AGENT " + str(self.id))
-
         return order
 
 #
@@ -347,35 +346,111 @@ class Agent_Arbitrage(BettingAgent):
     '''
     def __init__(self, id, name, lengthOfRace, endOfInPlayBettingPeriod):
         BettingAgent.__init__(self, id, name, lengthOfRace, endOfInPlayBettingPeriod)
+        self.backStake = 100
+        self.inProcess = False
+        self.ordersCompleted = 0
 
     def getorder(self, time, markets):
         order = None
+        if len(self.orders) > 0:
+            order = self.orders.pop(0)
+
+
+        if order != None: print(order)
 
         return order
+    # 
+    #
+    #
+    # def respond(self, time, markets, trade):
+    #
+    #     def calculateArbOpportunities(self, opportunities, competitors):
+    #         for i in range(len(competitors)):
+    #             backOdds = competitors[i][0][1]
+    #             backExchange = competitors[i][0][0]
+    #             layOdds = competitors[i][2][1]
+    #             layExchange = competitors[i][2][0]
+    #
+    #             if layOdds == backOdds or backExchange == layExchange or layExchange == None or backExchange == None: continue
+    #
+    #             potentialBackWinnings = backOdds * self.backStake
+    #             layStake = potentialBackWinnings / layOdds
+    #
+    #             bet = [[backExchange, 'back', i,  backOdds, self.backStake], [layExchange, 'lay', i, layOdds, layStake]]
+    #             opportunities.append(bet)
+    #
+    #         if len(opportunities) < 1: return None
+    #         else:
+    #             r = random.randint(0, len(opportunities)-1)
+    #             return opportunities[r]
+    #
+    #
+    #     # create list of best backs and lays for all competitors available on each exchange
+    #     # if back odds are 2.06 on exchange 0 and lay odds are 2.0 for same competitor on exchange 1
+    #     # then can back £100 on comp 1
+    #     # and lay (100 * 1.0206) £104.04 on comp 1
+    #
+    #     competitors = []
+    #     # list of all opportunities, each list item formatted as [(exchange, direction, competitor, odds, stake),(exchange, direction, competitor, odds, stake)]
+    #     opportunities = []
+    #
+    #     for c in range(NUM_OF_COMPETITORS):
+    #         bestBack = (None, 100000)
+    #         bestLay = (None, -1)
+    #         worstBack = (None, -1)
+    #         worstLay = (None, 100000)
+    #         exchangeData = None
+    #
+    #         for e in range(NUM_OF_EXCHANGES):
+    #             exchange = markets[e]
+    #             bestBackOnExchange = exchange[c]['backs']['best']
+    #             bestLayOnExchange = exchange[c]['lays']['best']
+    #             if bestBackOnExchange != None:
+    #                 if(bestBackOnExchange < bestBack[1]):
+    #                     bestBack = (e, bestBackOnExchange)
+    #                 if(bestBackOnExchange > worstBack[1]):
+    #                     worstBack = (e, bestBackOnExchange)
+    #             if bestLayOnExchange != None:
+    #                 if(bestLayOnExchange > bestLay[1]):
+    #                     bestLay = (e, bestLayOnExchange)
+    #                 if(bestLayOnExchange < worstLay[1]):
+    #                     worstLay = (e, bestLayOnExchange)
+    #
+    #         compOdds = [bestBack, worstBack, bestLay, worstLay]
+    #         competitors.append(compOdds)
+    #
+    #     bet = calculateArbOpportunities(self, opportunities, competitors)
+    #
+    #     if bet != None and self.inProcess == False:
+    #         back = bet[0]
+    #         bExchange = back[0]
+    #         bCompetitor = back[2]
+    #         bOdds = back[3]
+    #         lay = bet[1]
+    #         lExchange = lay[0]
+    #         lCompetitor = lay[2]
+    #         lOdds = lay[3]
+    #         lStake = lay[4]
+    #         backBet = Order(bExchange, self.id, bCompetitor, 'back', bOdds, self.backStake, markets[bExchange][bCompetitor]['QID'], time)
+    #         layBet = Order(lExchange, self.id, lCompetitor, 'lay', lOdds, int(lStake), markets[lExchange][lCompetitor]['QID'], time)
+    #         self.orders.append(backBet)
+    #         self.orders.append(layBet)
+    #         self.inProcess = True
+    #
+    # def bookkeep(self, trade, direction, order, time):
+    #     print("BOOKEEP")
+    #     print(trade)
+    #     print(order)
+    #     self.ordersCompleted = self.ordersCompleted + 1
+    #     if self.ordersCompleted % 2 == 0: self.inProcess = False
 
-    def respond(self, time, markets, trade):
-        # create list of best backs and lays for all competitors available on each exchange
-        # if back odds are 2.06 on exchange 0 and lay odds are 2.0 for same competitor on exchange 1
-        # then can back £100 on comp 1
-        # and lay (100 * 1.0206) £104.04 on comp 1
 
 
 
-        # bestBacks = {}
-        # bestLays = {}
-        # for key, exchange in markets.items():
-        #     for id, comp in exchange.items():
-        #         if comp['backs']['best'] != None:
-        #             item = {}
-        #             item[id] = comp['backs']['best'])
-        #             bestBacks[key] = item
-        #         if comp['lays']['best'] != None:
-        #             item = {}
-        #             item[id] = comp['lays']['best'])
-        #             bestLays[key] = item
-        #
-        #
-        return
+
+
+
+
 
 # def respond(self, time, markets, trade):
 #     # DIMM buys and holds, sells as soon as it can make a "decent" profit

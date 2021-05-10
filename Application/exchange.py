@@ -300,12 +300,12 @@ class Exchange(Orderbook):
 
 		return competitorsMarkets
 
-	def createTransactionRecord(self, orderbook, order, counterparty, odds, time):
+	def createTransactionRecord(self, orderbook, order, counterparty, odds, time, takenStake):
 		# process the trade
-		if EXCHANGE_VERBOSE:
-			print(">>>>>>>>> TRADE at TIME:" + str(time) + ", ODDS of: " +
-			str(odds) + " as a: " + str(order.direction) + " FROM: " +
-			str(order.agentId) + ", WITH: " + str(counterparty))
+#		if EXCHANGE_VERBOSE:
+		print(">>>>>>>>> TRADE at TIME:" + str(time) + ", ODDS of: " +
+		str(odds) + " STAKE OF: " + str(takenStake) +  " as a: " + str(order.direction) + " FROM: " +
+		str(order.agentId) + ", WITH: " + str(counterparty))
 
 		if order.direction == 'Back':
 			backer = order.agentId
@@ -321,7 +321,7 @@ class Exchange(Orderbook):
 								'odds': odds,
 								'backer':backer,
 								'layer':layer,
-								'stake': order.stake
+								'stake': takenStake
 								}
 		orderbook.tape.append(transactionRecord)
 
@@ -358,7 +358,7 @@ class Exchange(Orderbook):
 				orderbook.backs.bookDeleteBest(orderStake)
 
 				# create transaction record
-				transactions.append(self.createTransactionRecord(orderbook, order, counterparty, odds, time))
+				transactions.append(self.createTransactionRecord(orderbook, order, counterparty, odds, time, orderStake))
 
 			elif(orderStake < oppositeOrderStake):
 				if EXCHANGE_VERBOSE:
@@ -371,7 +371,7 @@ class Exchange(Orderbook):
 				orderbook.backs.bookDeleteBest(orderStake)
 
 				# create transaction record
-				transactions.append(self.createTransactionRecord(orderbook, order, counterparty, odds, time))
+				transactions.append(self.createTransactionRecord(orderbook, order, counterparty, odds, time, orderStake))
 
 			# else orderStake > amountStaked
 			elif(orderStake > oppositeOrderStake):
@@ -385,8 +385,9 @@ class Exchange(Orderbook):
 						orderbook.lays.bookDeleteBest(orderStake)
 						orderbook.backs.bookModifyBest(oppositeOrderStake, order.agentId)
 
+
 						# create transaction record
-						transactions.append(self.createTransactionRecord(orderbook, order, counterparty, odds, time))
+						transactions.append(self.createTransactionRecord(orderbook, order, counterparty, odds, time, oppositeOrderStake))
 
 						newOrderStake = orderStake - oppositeOrderStake
 						self.match(order, orderOdds, newOrderStake, orderDirection, orderbook, transactions, time)
@@ -418,7 +419,7 @@ class Exchange(Orderbook):
 					orderbook.lays.bookDeleteBest(orderStake)
 
 					# create transaction record
-					transactions.append(self.createTransactionRecord(orderbook, order, counterparty, odds, time))
+					transactions.append(self.createTransactionRecord(orderbook, order, counterparty, odds, time, orderStake))
 
 				elif(orderStake < oppositeOrderStake):
 					counterparty = bestBackAgentId
@@ -428,7 +429,7 @@ class Exchange(Orderbook):
 					orderbook.backs.bookModifyBest(orderStake, counterparty)
 
 					# create transaction record
-					transactions.append(self.createTransactionRecord(orderbook, order, counterparty, odds, time))
+					transactions.append(self.createTransactionRecord(orderbook, order, counterparty, odds, time, orderStake))
 
 				# else orderStake > amountStaked
 				elif(orderStake > oppositeOrderStake):
@@ -440,7 +441,7 @@ class Exchange(Orderbook):
 						orderbook.backs.bookDeleteBest(orderStake)
 
 						# create transaction record
-						transactions.append(self.createTransactionRecord(orderbook, order, counterparty, odds, time))
+						transactions.append(self.createTransactionRecord(orderbook, order, counterparty, odds, time, oppositeOrderStake))
 
 						newOrderStake = orderStake - oppositeOrderStake
 						self.match(order, orderOdds, newOrderStake, orderDirection, orderbook, transactions, time)
