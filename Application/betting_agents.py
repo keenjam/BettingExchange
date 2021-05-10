@@ -499,6 +499,9 @@ class Agent_Priveledged(BettingAgent):
         self.exAnteOdds = getExAnteOdds(self.id)
         self.betPreRace = False
         self.updateInterval = 10
+        self.stake = 10
+        self.backDelta = 0.1
+        self.layDelta = 0.1
 
         self.BidOdds = []
         self.LayOdds = []
@@ -515,15 +518,15 @@ class Agent_Priveledged(BettingAgent):
 
     def getExAnteOrder(self, time, markets):
         for i in range(len(self.exAnteOdds)):
-            odds = self.exAnteOdds[i]
+            odds = self.exAnteOdds[i] - self.backDelta
             direction = 'Back'
             if odds == MAX_ODDS:
                 direction = 'Lay'
-                if markets[self.exchange][i]['backs']['n'] > 0: odds = markets[self.exchange][i]['backs']['best']
+                if markets[self.exchange][i]['backs']['n'] > 0: odds = markets[self.exchange][i]['backs']['best'] + self.layDelta
                 else:
                     continue
 
-            order = Order(self.exchange, self.id, i, direction, max(MIN_ODDS, odds), 1, markets[self.exchange][i]['QID'], time)
+            order = Order(self.exchange, self.id, i, direction, max(MIN_ODDS, odds), self.stake, markets[self.exchange][i]['QID'], time)
             self.orders.append(order)
             #print("AGENT " + str(self.id) + ": " + str(order))
 
@@ -541,14 +544,14 @@ class Agent_Priveledged(BettingAgent):
             winner = None
             winnerOdds = MAX_ODDS
             for i in range(len(odds)):
-                quoteodds = odds[i]
+                quoteodds = odds[i] - self.backDelta
                 direction = 'Back'
                 if quoteodds == MAX_ODDS:
                     direction = 'Lay'
-                    if markets[self.exchange][i]['backs']['n'] > 0: quoteodds = markets[self.exchange][i]['backs']['best']
+                    if markets[self.exchange][i]['backs']['n'] > 0: quoteodds = markets[self.exchange][i]['backs']['best'] + self.layDelta
                     else:
                         continue
-                order = Order(self.exchange, self.id, i, direction, max(MIN_ODDS, quoteodds), 1, markets[self.exchange][i]['QID'], time)
+                order = Order(self.exchange, self.id, i, direction, max(MIN_ODDS, quoteodds), self.stake, markets[self.exchange][i]['QID'], time)
                 self.orders.append(order)
 
     def getorder(self, time, markets):

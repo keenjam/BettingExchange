@@ -21,20 +21,35 @@ def priv_bettor_odds(bettingAgents):
         header.append(str(c))
 
     for b in privBettors:
-        fileName = "comp_odds_by_" + str(b.id) + ".csv"
+        fileName = "data/comp_odds_by_" + str(b.id) + ".csv"
         with open(fileName, 'w', newline = '') as file:
             writer = csv.writer(file)
             writer.writerow(header)
             writer.writerows(b.oddsData)
 
 
+def final_balances(bettingAgents):
+    bettors = []
+    for id, agent in bettingAgents.items():
+        bettors.append(agent)
 
+    header = []
+    for i in range(len(bettors)):
+        header.append(str(i))
 
+    data = []
+    for i in range(len(bettors)):
+        data.append(bettors[i].balance)
 
-
-
+    for b in bettors:
+        fileName = "data/final_balance_" + str(b.id) + ".csv"
+        with open(fileName, 'w', newline = '') as file:
+            writer = csv.writer(file)
+            writer.writerow(header)
+            writer.writerow(data)
 
 
 
 def createstats(bettingAgents):
     priv_bettor_odds(bettingAgents)
+    final_balances(bettingAgents)
