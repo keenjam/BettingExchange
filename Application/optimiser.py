@@ -42,8 +42,10 @@ def deltaObjective(agentId, x):
     print("CANDIDATE")
     print(x[0])
     sess = Session()
+    print(sess.bettingAgents[agentId].layDelta)
     sess.bettingAgents[agentId].backDelta = x[0]
     sess.bettingAgents[agentId].layDelta = x[0]
+    print(sess.bettingAgents[agentId].layDelta)
 
     sess.runSession()
 
@@ -104,13 +106,15 @@ def main():
     # id of agent to be optimised
     agentId = 14
     # define range for input
-    bounds = asarray([[1.0, 100.0]])
+    stakeBounds = asarray([[1.0, 100.0]])
+    deltaBounds = asarray([[-5.0, 5.0]])
     # define the total iterations
     n_iterations = 1
     # define the maximum step size
-    step_size = 1.0
+    stake_step_size = 1.0
+    delta_step_size = 0.1
 
-    optimise(agentId, bounds, n_iterations, step_size)
+    optimise(agentId, deltaBounds, n_iterations, delta_step_size)
 
 
 if __name__ == "__main__":
