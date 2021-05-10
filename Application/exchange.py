@@ -302,10 +302,10 @@ class Exchange(Orderbook):
 
 	def createTransactionRecord(self, orderbook, order, counterparty, odds, time, takenStake):
 		# process the trade
-#		if EXCHANGE_VERBOSE:
-		print(">>>>>>>>> TRADE at TIME:" + str(time) + ", ODDS of: " +
-		str(odds) + " STAKE OF: " + str(takenStake) +  " as a: " + str(order.direction) + " FROM: " +
-		str(order.agentId) + ", WITH: " + str(counterparty))
+		if EXCHANGE_VERBOSE:
+			print(">>>>>>>>> TRADE at TIME:" + str(time) + ", ODDS of: " +
+			str(odds) + " STAKE OF: " + str(takenStake) +  " as a: " + str(order.direction) + " FROM: " +
+			str(order.agentId) + ", WITH: " + str(counterparty))
 
 		if order.direction == 'Back':
 			backer = order.agentId
