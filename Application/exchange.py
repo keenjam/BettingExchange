@@ -108,14 +108,15 @@ class OrderbookHalf:
 		# delete order from the dictionary holding the orders
 		# assumes max of one order per trader per list
 		# checks that the Trader ID does actually exist in the dict before deletion
-
-		if self.orders.get(order.agentId) != None :
+		if self.orders[order.agentId] != None :
 			del(self.orders[order.agentId])
+			if self.market[self.bestOdds][0] == order.stake:
+				del(self.market[self.bestOdds])
 			self.numOfOrders = len(self.orders)
 			self.buildMarket()
 
 
-	def bookDeleteBest(self, orderStake):
+	def bookDeleteBest(self, orderStake, order):
 		"""
 		Delete order from book when has been fulfilled, returns agent ID of
 		order as the counterparty
@@ -137,6 +138,9 @@ class OrderbookHalf:
 		# and counterparty order otherwise just delete counterparty order
 
 		del(self.orders[bestOddsCounterparty])
+		if self.market[self.bestOdds][0] == orderStake:
+			del(self.market[self.bestOdds])
+
 		self.numOfOrders = self.numOfOrders - 1
 
 		# print(self.market)
@@ -173,8 +177,6 @@ class OrderbookHalf:
 
 		# change amount staked by diff
 		self.orders[id].stake = self.orders[id].stake - diff
-
-
 		self.buildMarket()
 
 
@@ -334,89 +336,81 @@ class Exchange(Orderbook):
 		bestBackAgentId = orderbook.backs.bestAgentId
 
 		if orderDirection == 'Back':
-			if bestLay == None:
-				# No lays left on market therefore just return
-				return
+			if orderbook.lays.numOfOrders > 0 and bestBack <= bestLay:
 
-			# get amount staked at best lay
+				# get amount staked at best lay
+				oppositeOrderStake = orderbook.lays.bestOrderStake
 
-			oppositeOrderStake = orderbook.lays.bestOrderStake
+				if orderStake == oppositeOrderStake:
+					if EXCHANGE_VERBOSE:
+						print("ORDER STAKE == OPP ORDER STAKE")
+					# bid lifts the best ask
+					if EXCHANGE_VERBOSE:
+						print("Amount staked on market covers order stake")
+						print("Back $%s lifts best lay" % orderOdds)
+					counterparty = bestLayAgentId
+					#counter_coid = self.lays.orders[counterparty].coid
+					odds = bestLay  # bid crossed ask, so use ask price
+					# delete the ask just crossed
+					orderbook.lays.bookDeleteBest(orderStake, order)
+					# delete the bid that was the latest order
+					orderbook.backs.bookDeleteBest(orderStake, order)
 
-			if orderStake == oppositeOrderStake:
-				if EXCHANGE_VERBOSE:
-					print("ORDER STAKE == OPP ORDER STAKE")
-				# bid lifts the best ask
-				if EXCHANGE_VERBOSE:
-					print("Amount staked on market covers order stake")
-					print("Back $%s lifts best lay" % orderOdds)
-				counterparty = bestLayAgentId
-				#counter_coid = self.lays.orders[counterparty].coid
-				odds = bestLay  # bid crossed ask, so use ask price
-				# delete the ask just crossed
-				orderbook.lays.bookDeleteBest(orderStake)
-				# delete the bid that was the latest order
-				orderbook.backs.bookDeleteBest(orderStake)
+					# create transaction record
+					transactions.append(self.createTransactionRecord(orderbook, order, counterparty, odds, time, orderStake))
 
-				# create transaction record
-				transactions.append(self.createTransactionRecord(orderbook, order, counterparty, odds, time, orderStake))
+				elif(orderStake < oppositeOrderStake):
+					if EXCHANGE_VERBOSE:
+						print("ORDER STAKE < OPP ORDER STAKE")
 
-			elif(orderStake < oppositeOrderStake):
-				if EXCHANGE_VERBOSE:
-					print("ORDER STAKE < OPP ORDER STAKE")
+					counterparty = bestLayAgentId
+					odds = bestLay
 
-				counterparty = bestLayAgentId
-				odds = bestLay
+					orderbook.lays.bookModifyBest(orderStake, counterparty)
+					orderbook.backs.bookDeleteBest(orderStake, order)
 
-				orderbook.lays.bookModifyBest(orderStake, counterparty)
-				orderbook.backs.bookDeleteBest(orderStake)
+					# create transaction record
+					transactions.append(self.createTransactionRecord(orderbook, order, counterparty, odds, time, orderStake))
 
-				# create transaction record
-				transactions.append(self.createTransactionRecord(orderbook, order, counterparty, odds, time, orderStake))
+				# else orderStake > amountStaked
+				elif(orderStake > oppositeOrderStake):
+					if EXCHANGE_VERBOSE:
+						print("ORDER STAKE > OPP ORDER STAKE")
 
-			# else orderStake > amountStaked
-			elif(orderStake > oppositeOrderStake):
-				if EXCHANGE_VERBOSE:
-					print("ORDER STAKE > OPP ORDER STAKE")
-				if bestLay != None:
-					if bestBack <= bestLay:
-						counterparty = bestLayAgentId
-						odds = bestLay
+					counterparty = bestLayAgentId
+					odds = bestLay
 
-						orderbook.lays.bookDeleteBest(orderStake)
-						orderbook.backs.bookModifyBest(oppositeOrderStake, order.agentId)
+					orderbook.lays.bookDeleteBest(orderStake, order)
+					orderbook.backs.bookModifyBest(oppositeOrderStake, order.agentId)
 
 
-						# create transaction record
-						transactions.append(self.createTransactionRecord(orderbook, order, counterparty, odds, time, oppositeOrderStake))
+					# create transaction record
+					transactions.append(self.createTransactionRecord(orderbook, order, counterparty, odds, time, oppositeOrderStake))
 
-						newOrderStake = orderStake - oppositeOrderStake
-						self.match(order, orderOdds, newOrderStake, orderDirection, orderbook, transactions, time)
-				# if order odds are greater than any lays on the LOB
-				# then just leave unfilled portion of best back on the market
-				else:
-					print("ORDER partially unfilled, stake of " + str(orderStake) + " left on the market")
+					newOrderStake = orderStake - oppositeOrderStake
+					self.match(order, orderOdds, newOrderStake, orderDirection, orderbook, transactions, time)
+			# if order odds are greater than any lays on the LOB
+			# then just leave unfilled portion of best back on the market
+			else:
+				print("BACK")
+				print("ORDER partially unfilled, stake of " + str(orderStake) + " left on the market")
 
 		if orderDirection == 'Lay':
-			# get amount staked at best lay
-			amountStaked = orderbook.backs.market[bestBack][0]
-			oppositeOrderStake = orderbook.backs.bestOrderStake
-			if orderStake == oppositeOrderStake:
-				if bestBack == None:
-					# No backs left on market therefore just return
-					return
-				# bid lifts the best ask
-				if EXCHANGE_VERBOSE:
-					print("Amount staked on market covers order stake")
-					# ask hits the best bid
-					if EXCHANGE_VERBOSE: print("Lay $%s hits best back" % orderOdds)
-					# remove the best bid
+			if orderbook.backs.numOfOrders > 0 and bestLay >= bestBack:
+
+				oppositeOrderStake = orderbook.backs.bestOrderStake
+
+				if orderStake == oppositeOrderStake:
+					if EXCHANGE_VERBOSE:
+						print("Amount staked on market covers order stake")
+
 					counterparty = bestBackAgentId
 					#counter_coid = self.bids.orders[counterparty].coid
 					odds = bestBack  # ask crossed bid, so use bid price
 					# delete the bid just crossed, from the exchange's records
-					orderbook.backs.bookDeleteBest(orderStake)
+					orderbook.backs.bookDeleteBest(orderStake, order)
 					# delete the ask that was the latest order, from the exchange's records
-					orderbook.lays.bookDeleteBest(orderStake)
+					orderbook.lays.bookDeleteBest(orderStake, order)
 
 					# create transaction record
 					transactions.append(self.createTransactionRecord(orderbook, order, counterparty, odds, time, orderStake))
@@ -425,7 +419,7 @@ class Exchange(Orderbook):
 					counterparty = bestBackAgentId
 					odds = bestBack
 
-					orderbook.lays.bookDeleteBest(orderStake)
+					orderbook.lays.bookDeleteBest(orderStake, order)
 					orderbook.backs.bookModifyBest(orderStake, counterparty)
 
 					# create transaction record
@@ -433,12 +427,12 @@ class Exchange(Orderbook):
 
 				# else orderStake > amountStaked
 				elif(orderStake > oppositeOrderStake):
-					if bestLay <= bestBack:
+					if bestLay >= bestBack:
 						counterparty = bestBackAgentId
 						odds = bestBack
 
 						orderbook.lays.bookModifyBest(oppositeOrderStake, order.agentId)
-						orderbook.backs.bookDeleteBest(orderStake)
+						orderbook.backs.bookDeleteBest(orderStake, order)
 
 						# create transaction record
 						transactions.append(self.createTransactionRecord(orderbook, order, counterparty, odds, time, oppositeOrderStake))
@@ -447,8 +441,9 @@ class Exchange(Orderbook):
 						self.match(order, orderOdds, newOrderStake, orderDirection, orderbook, transactions, time)
 						# if order odds are greater than any lays on the LOB
 						# then just leave unfilled portion of best back on the market
-					else:
-						print("ORDER partially unfilled, stake of " + str(orderStake) + " left on the market")
+			else:
+				print("LAY")
+				print("ORDER partially unfilled, stake of " + str(orderStake) + " left on the market")
 
 
 
@@ -546,15 +541,20 @@ class Exchange(Orderbook):
 		Settle up bets between betting agents at end of event, updates agent's
 		balances
 		"""
+
 		for orderbook in self.compOrderbooks:
+			print(len(orderbook.tape))
 			for trade in orderbook.tape:
 				backer = bettingAgents[trade['backer']]
 				layer = bettingAgents[trade['layer']]
 				odds = trade['odds']
 				stake = trade['stake']
+				if backer.id == 12 or layer.id == 12:
+					print(trade)
+					print(orderbook.competitorId)
 				if orderbook.competitorId == winningCompetitor:
-					backer.balance = backer.balance + (odds * stake)
-					layer.balance = layer.balance - (odds * stake)
+					backer.balance = backer.balance + (odds * stake) - stake
+					layer.balance = layer.balance - (odds * stake) + stake
 				else:
 					layer.balance = layer.balance + stake
 					backer.balance = backer.balance - stake

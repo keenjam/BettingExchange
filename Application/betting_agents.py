@@ -20,14 +20,19 @@ class BettingAgent:
     def __init__(self, id, name, lengthOfRace, endOfInPlayBettingPeriod, exchange = None):
         self.id = id
         self.name = name
-        self.balance = 500
+        self.balance = 5000
         self.liability = 0 # Amount that bettor is liable for if bettor lays winner
         self.availableBalance = self.balance
         self.orders = []
+        self.amountFromOrders = 0
+        self.amountFromTransactions = 0
         self.numOfBets = 0 # Number of bets live on BBE
         self.exchange = random.randint(0, NUM_OF_EXCHANGES-1)
         self.endOfInPlayBettingPeriod = endOfInPlayBettingPeriod
         self.bettingPeriod = True
+
+        self.stakeLower = 15
+        self.stakeHigher = 15
 
         # race details
         self.lengthOfRace = lengthOfRace
@@ -48,16 +53,20 @@ class BettingAgent:
             self.bettingPeriod = False
 
 
-    def bookkeep(self, type, trade, order, time):
+    def bookkeep(self, trade, type, order, time):
         orderType = self
-
         self.numOfBets = self.numOfBets - 1
-        if type == 'Backer': self.availableBalance = self.availableBalance - order.stake
-        if type == 'Layer': self.availableBalance - order.odds
+        if type == 'Backer':
+            self.amountFromTransactions += trade['stake']
+            #self.availableBalance = self.availableBalance - trade['stake']
+        if type == 'Layer':
+            self.amountFromTransactions += (trade['odds'] * trade['stake']) + trade['stake']
+            #self.availableBalance = self.availableBalance - (trade['odds'] * trade['stake']) + trade['stake']
 
         return None
 
     def respond(self, time, markets, trade):
+
         return None
 
 
@@ -69,8 +78,15 @@ class Agent_Random(BettingAgent):
 
     def getorder(self, time, markets):
         order = None
+        if len(self.orders) > 0:
+            order = self.orders.pop()
+
+        return order
+
+    def respond(self, time, markets, trade):
+        order = None
         if self.bettingPeriod == False: return None
-        r = random.randint(0,1)
+        r = random.randint(0,10)
         if(r == 0):
             c = random.randint(0, NUM_OF_COMPETITORS-1)
             e = random.randint(0, NUM_OF_EXCHANGES-1)
@@ -79,15 +95,34 @@ class Agent_Random(BettingAgent):
                 quoteodds = MIN_ODDS
                 if markets[e][c]['lays']['n'] > 0:
                     quoteodds = markets[e][c]['lays']['best']
-                    order = Order(e, self.id, c, 'Back', quoteodds, random.randint(1,300), markets[e][c]['QID'], time)
+                    order = Order(e, self.id, c, 'Back', quoteodds, random.randint(self.stakeLower, self.stakeHigher), markets[e][c]['QID'], time)
                 #print("BACK MADE BY AGENT " + str(self.id))
             else:
                 quoteodds = MAX_ODDS
                 if markets[e][c]['backs']['n'] > 0:
                     quoteodds = markets[e][c]['backs']['best']
-                    order = Order(e, self.id, c, 'Lay', quoteodds, random.randint(1,300), markets[e][c]['QID'], time)
+                    order = Order(e, self.id, c, 'Lay', quoteodds, random.randint(self.stakeLower, self.stakeHigher), markets[e][c]['QID'], time)
                 #print("LAY MADE BY AGENT " + str(self.id))
-        return order
+
+        if order != None:
+            if(order.direction == 'Back'):
+                liability = self.amountFromOrders + order.stake
+                if liability > self.balance: return
+                else:
+                    self.orders.append(order)
+                    self.amountFromOrders = liability
+
+            elif(order.direction == 'Lay'):
+                liability = self.amountFromOrders + ((order.stake * order.odds) - order.stake)
+                if liability > self.balance: return
+                else:
+                    self.orders.append(order)
+                    self.amountFromOrders = liability
+
+
+
+
+
 
 #
 # class Agent_Random(BettingAgent):
@@ -158,6 +193,13 @@ class Agent_Leader_Wins(BettingAgent):
         self.bettingInterval = random.randint(10,30)
 
     def getorder(self, time, markets):
+        order = None
+        if len(self.orders) > 0:
+            order = self.orders.pop()
+        return order
+
+
+    def respond(self, time, markets, trade):
         if self.bettingPeriod == False: return None
         order = None
         if self.raceStarted == False: return order
@@ -168,8 +210,23 @@ class Agent_Leader_Wins(BettingAgent):
                 quoteodds = max(MIN_ODDS, markets[self.exchange][compInTheLead]['backs']['best'] - 0.1)
             else:
                 quoteodds = markets[self.exchange][compInTheLead]['backs']['worst']
-            order = Order(self.exchange, self.id, compInTheLead, 'Back', quoteodds, 1, markets[self.exchange][compInTheLead]['QID'], time)
-        return order
+            order = Order(self.exchange, self.id, compInTheLead, 'Back', quoteodds, random.randint(self.stakeLower, self.stakeHigher), markets[self.exchange][compInTheLead]['QID'], time)
+
+
+        if order != None:
+            if(order.direction == 'Back'):
+                liability = self.amountFromOrders + order.stake
+                if liability > self.balance: return
+                else:
+                    self.orders.append(order)
+                    self.amountFromOrders = liability
+
+            elif(order.direction == 'Lay'):
+                liability = self.amountFromOrders + ((order.stake * order.odds) - order.stake)
+                if liability > self.balance: return
+                else:
+                    self.orders.append(order)
+                    self.amountFromOrders = liability
 
 class Agent_Underdog(BettingAgent):
     # This betting agent's view of the race outcome is that the competitor in
@@ -200,6 +257,12 @@ class Agent_Underdog(BettingAgent):
 
     def getorder(self, time, markets):
         order = None
+        if len(self.orders) > 0:
+            order = self.orders.pop()
+        return order
+
+    def respond(self, time, markets, trade):
+        order = None
         if self.numOfBets >= 10 or self.raceStarted == False or self.bettingPeriod == False: return order
         if self.bettingTime <= self.raceTimestep:
             if self.job == 'back_underdog':
@@ -207,7 +270,7 @@ class Agent_Underdog(BettingAgent):
                     quoteodds = max(MIN_ODDS, markets[self.exchange][self.compInSecond]['backs']['best'] - 0.1)
                 else:
                     quoteodds = markets[self.exchange][self.compInTheLead]['backs']['worst']
-                order = Order(self.exchange, self.id, self.compInSecond, 'Back', quoteodds, 1, markets[self.exchange][self.compInSecond]['QID'], time)
+                order = Order(self.exchange, self.id, self.compInSecond, 'Back', quoteodds, random.randint(self.stakeLower, self.stakeHigher), markets[self.exchange][self.compInSecond]['QID'], time)
                 self.job = "lay_leader"
 
             elif self.job == 'lay_leader':
@@ -215,9 +278,23 @@ class Agent_Underdog(BettingAgent):
                     quoteodds = markets[self.exchange][self.compInTheLead]['lays']['best'] + 0.1
                 else:
                     quoteodds = markets[self.exchange][self.compInTheLead]['lays']['worst']
-                order = Order(self.exchange, self.id, self.compInTheLead, 'Lay', quoteodds, 1, markets[self.exchange][self.compInTheLead]['QID'], time)
+                order = Order(self.exchange, self.id, self.compInTheLead, 'Lay', quoteodds, random.randint(self.stakeLower, self.stakeHigher), markets[self.exchange][self.compInTheLead]['QID'], time)
                 self.job = None
-        return order
+
+        if order != None:
+            if(order.direction == 'Back'):
+                liability = self.amountFromOrders + order.stake
+                if liability > self.balance: return
+                else:
+                    self.orders.append(order)
+                    self.amountFromOrders = liability
+
+            elif(order.direction == 'Lay'):
+                liability = self.amountFromOrders + ((order.stake * order.odds) - order.stake)
+                if liability > self.balance: return
+                else:
+                    self.orders.append(order)
+                    self.amountFromOrders = liability
 
 
 class Agent_Back_Favourite(BettingAgent):
@@ -229,6 +306,12 @@ class Agent_Back_Favourite(BettingAgent):
         self.marketsFave = None
 
     def getorder(self, time, markets):
+        order = None
+        if len(self.orders) > 0:
+            order = self.orders.pop()
+        return order
+
+    def respond(self, time, markets, trade):
         if self.bettingPeriod == False: return None
         order = None
         marketsFave = None
@@ -249,9 +332,22 @@ class Agent_Back_Favourite(BettingAgent):
         elif marketsFave != None:
             self.marketsFave = marketsFave
             quoteodds = max(MIN_ODDS, lowestOdds - 0.1)
-            order = Order(self.exchange, self.id, marketsFave, 'Back', quoteodds, 1, markets[self.exchange][marketsFave]['QID'], time)
+            order = Order(self.exchange, self.id, marketsFave, 'Back', quoteodds, random.randint(self.stakeLower, self.stakeHigher), markets[self.exchange][marketsFave]['QID'], time)
 
-        return order
+        if order != None:
+            if(order.direction == 'Back'):
+                liability = self.amountFromOrders + order.stake
+                if liability > self.balance: return
+                else:
+                    self.orders.append(order)
+                    self.amountFromOrders = liability
+
+            elif(order.direction == 'Lay'):
+                liability = self.amountFromOrders + ((order.stake * order.odds) - order.stake)
+                if liability > self.balance: return
+                else:
+                    self.orders.append(order)
+                    self.amountFromOrders = liability
 
 class Agent_Linex(BettingAgent):
     # This betting agent's view of the race result stems from performing linear
@@ -316,6 +412,12 @@ class Agent_Linex(BettingAgent):
 
     def getorder(self, time, markets):
         order = None
+        if len(self.orders) > 0:
+            order = self.orders.pop()
+        return order
+
+    def respond(self, time, markets, trade):
+        order = None
         if self.predicted == False or self.bettingPeriod == False: return order
 
         #print(self.predictedWinner)
@@ -326,7 +428,7 @@ class Agent_Linex(BettingAgent):
                 quoteodds = max(MIN_ODDS, markets[self.exchange][self.predictedWinner]['backs']['best'] - 0.1)
             else:
                 quoteodds = markets[self.exchange][self.predictedWinner]['backs']['worst']
-            order = Order(self.exchange, self.id, self.predictedWinner, 'Back', quoteodds, 1, markets[self.exchange][self.predictedWinner]['QID'], time)
+            order = Order(self.exchange, self.id, self.predictedWinner, 'Back', quoteodds, random.randint(self.stakeLower, self.stakeHigher), markets[self.exchange][self.predictedWinner]['QID'], time)
             self.job = "lay_pred_loser"
 
         elif self.job == 'lay_pred_loser':
@@ -334,10 +436,23 @@ class Agent_Linex(BettingAgent):
                 quoteodds = markets[self.exchange][self.predictedLoser]['lays']['best'] + 0.1
             else:
                 quoteodds = markets[self.exchange][self.predictedLoser]['lays']['worst']
-            order = Order(self.exchange, self.id, self.predictedLoser, 'Lay', quoteodds, 1, markets[self.exchange][self.predictedLoser]['QID'], time)
+            order = Order(self.exchange, self.id, self.predictedLoser, 'Lay', quoteodds, random.randint(self.stakeLower, self.stakeHigher), markets[self.exchange][self.predictedLoser]['QID'], time)
             self.job = None
 
-        return order
+        if order != None:
+            if(order.direction == 'Back'):
+                liability = self.amountFromOrders + order.stake
+                if liability > self.balance: return
+                else:
+                    self.orders.append(order)
+                    self.amountFromOrders = liability
+
+            elif(order.direction == 'Lay'):
+                liability = self.amountFromOrders + ((order.stake * order.odds) - order.stake)
+                if liability > self.balance: return
+                else:
+                    self.orders.append(order)
+                    self.amountFromOrders = liability
 
 class Agent_Arbitrage(BettingAgent):
     '''
@@ -436,6 +551,7 @@ class Agent_Arbitrage(BettingAgent):
             layBet = Order(lExchange, self.id, lCompetitor, 'Lay', lOdds, int(lStake), markets[lExchange][lCompetitor]['QID'], time)
             print(backBet)
             print(layBet)
+
             self.orders.append(backBet)
             self.orders.append(layBet)
             self.inProcess = True
@@ -498,7 +614,7 @@ class Agent_Priveledged(BettingAgent):
         BettingAgent.__init__(self, id, name, lengthOfRace, endOfInPlayBettingPeriod)
         self.exAnteOdds = getExAnteOdds(self.id)
         self.betPreRace = False
-        self.updateInterval = 10
+        self.updateInterval = 5
         self.stake = 10
         self.backDelta = 0.1
         self.layDelta = 0.1
@@ -518,15 +634,15 @@ class Agent_Priveledged(BettingAgent):
 
     def getExAnteOrder(self, time, markets):
         for i in range(len(self.exAnteOdds)):
-            odds = self.exAnteOdds[i] - self.backDelta
+            odds = self.exAnteOdds[i]
             direction = 'Back'
             if odds == MAX_ODDS:
                 direction = 'Lay'
                 if markets[self.exchange][i]['backs']['n'] > 0: odds = markets[self.exchange][i]['backs']['best'] + self.layDelta
                 else:
                     continue
-
-            order = Order(self.exchange, self.id, i, direction, max(MIN_ODDS, odds), self.stake, markets[self.exchange][i]['QID'], time)
+            if direction == 'Back': odds = odds - self.backDelta
+            order = Order(self.exchange, self.id, i, direction, max(MIN_ODDS, odds), random.randint(self.stakeLower, self.stakeHigher), markets[self.exchange][i]['QID'], time)
             self.orders.append(order)
             #print("AGENT " + str(self.id) + ": " + str(order))
 
@@ -544,17 +660,32 @@ class Agent_Priveledged(BettingAgent):
             winner = None
             winnerOdds = MAX_ODDS
             for i in range(len(odds)):
-                quoteodds = odds[i] - self.backDelta
+                quoteodds = odds[i]
                 direction = 'Back'
                 if quoteodds == MAX_ODDS:
                     direction = 'Lay'
-                    if markets[self.exchange][i]['backs']['n'] > 0: quoteodds = markets[self.exchange][i]['backs']['best'] + self.layDelta
+                    if markets[self.exchange][i]['backs']['n'] > 0:
+                        quoteodds = markets[self.exchange][i]['backs']['best'] + self.layDelta
+                        order = Order(self.exchange, self.id, i, direction, max(MIN_ODDS, quoteodds), random.randint(self.stakeLower, self.stakeHigher), markets[self.exchange][i]['QID'], time)
                     else:
                         continue
-                order = Order(self.exchange, self.id, i, direction, max(MIN_ODDS, quoteodds), self.stake, markets[self.exchange][i]['QID'], time)
-                self.orders.append(order)
+                elif(markets[self.exchange][i]['backs']['n'] > 0):
+                    if(quoteodds < markets[self.exchange][i]['backs']['best']):
+                        quoteodds = quoteodds - self.backDelta
+                        order = Order(self.exchange, self.id, i, direction, max(MIN_ODDS, quoteodds), random.randint(self.stakeLower, self.stakeHigher), markets[self.exchange][i]['QID'], time)
+                        self.orders.append(order)
+                else:
+                    quoteodds = quoteodds - self.backDelta
+                    order = Order(self.exchange, self.id, i, direction, max(MIN_ODDS, quoteodds), random.randint(self.stakeLower, self.stakeHigher), markets[self.exchange][i]['QID'], time)
+                    self.orders.append(order)
 
     def getorder(self, time, markets):
+        order = None
+        if len(self.orders) > 0:
+            order = self.orders.pop()
+        return order
+
+    def respond(self, time, markets, trade):
         order = None
         if self.bettingPeriod == False: return order
         if self.raceStarted == False and self.betPreRace == False:
@@ -562,11 +693,6 @@ class Agent_Priveledged(BettingAgent):
             self.betPreRace = True
         elif self.raceStarted == True:
             self.getInPlayOrder(time, markets)
-
-        if len(self.orders) > 0:
-            order = self.orders.pop(0)
-
-        return order
 
     # def respond(self, time, markets, trade):
     #     # DIMM buys and holds, sells as soon as it can make a "decent" profit

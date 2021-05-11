@@ -91,7 +91,6 @@ class Session:
 
             agent.respond(timeInEvent, marketUpdates, trade)
             order = agent.getorder(timeInEvent, marketUpdates)
-            #print("ORDER: " + str(order))
 
             if order != None:
                 if TBBE_VERBOSE: print(order)

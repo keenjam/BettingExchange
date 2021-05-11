@@ -39,7 +39,6 @@ def observeRace(timestep):
     compDistances = {}
     for c in range(NUM_OF_COMPETITORS):
         compDistances[c] = float(r[0][c+1])
-
     return compDistances
 
 def createAdaptedCompPools(compPool, numOfPriveledgedBettors):
@@ -79,6 +78,7 @@ def createOdds(ix, compPool, numOfSimulations, timestep = None, raceState = None
             p = (oddsOfWinning[i] / numOfSimulations)
             oddsOfWinning[i] =  1 / p
             if oddsOfWinning[i] > MAX_ODDS: oddsOfWinning[i] = MAX_ODDS
+    #print("ODDS")
     #print(oddsOfWinning)
     #oddsOfWinning[:] = [(100 / (o / numOfSimulations)) for o in oddsOfWinning]
     if raceState != None and timestep != None:
@@ -124,6 +124,9 @@ def createInPlayOdds(numberOfTimesteps):
             pool = deepcopy(adaptedCompPools[i])
 
             createOdds(i, pool, 10, t, raceState)
+
+    print("INPLAYODDS")
+    print(inPlayOdds)
 
 
 
