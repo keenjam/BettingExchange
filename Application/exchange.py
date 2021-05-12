@@ -543,15 +543,11 @@ class Exchange(Orderbook):
 		"""
 
 		for orderbook in self.compOrderbooks:
-			print(len(orderbook.tape))
 			for trade in orderbook.tape:
 				backer = bettingAgents[trade['backer']]
 				layer = bettingAgents[trade['layer']]
 				odds = trade['odds']
 				stake = trade['stake']
-				if backer.id == 12 or layer.id == 12:
-					print(trade)
-					print(orderbook.competitorId)
 				if orderbook.competitorId == winningCompetitor:
 					backer.balance = backer.balance + (odds * stake) - stake
 					layer.balance = layer.balance - (odds * stake) + stake

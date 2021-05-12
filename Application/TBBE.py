@@ -205,7 +205,7 @@ class Session:
             self.updateRaceQ(i+1)
             i = i+1
             if TBBE_VERBOSE: print(i)
-            print(i)
+            #print(i)
             # run simulation
             #race.updateRaceState()
             #race.saveRaceState(0)
@@ -248,7 +248,7 @@ class Session:
         for id, agent in self.bettingAgents.items():
             print("Agent " + str(id) + "\'s final balance: " + str(agent.balance))
 
-        createstats(self.bettingAgents)
+        createstats(self.bettingAgents, simulationId)
 
     def initialiseThreads(self):
         self.initialiseExchanges()
@@ -272,8 +272,18 @@ class Session:
 
         createInPlayOdds(self.numberOfTimesteps)
 
+
+
+
+class BBE(Session):
+    def __init__(self):
+        self.session = None
+        return
+
+
     # MAIN LOOP
-    def runSession(self):
+    # argFuncf is an optional function which sets up a new session (takes in a sesson)
+    def runSession(self, argFunc=None):
         # Simulation attributes
         currentSimulation = 0
         ####################
@@ -284,10 +294,11 @@ class Session:
         # run simulation and matching engine
         while currentSimulation < NUM_OF_SIMS:
             simulationId = "Simulation: " + str(currentSimulation)
-
-
             # Start up thread for race on which all other threads will wait
-            self.eventSession(simulationId)
+            self.session = Session()
+            if argFunc:
+                argFunc(self.session)
+            self.session.eventSession(currentSimulation)
 
             currentSimulation = currentSimulation + 1
 
@@ -295,7 +306,6 @@ class Session:
 
 
 
-
 if __name__ == "__main__":
-    sess = Session()
-    sess.runSession()
+    bbe = BBE()
+    bbe.runSession()

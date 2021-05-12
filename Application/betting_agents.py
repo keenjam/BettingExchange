@@ -630,7 +630,7 @@ class Agent_Priveledged(BettingAgent):
         self.oddsData.append(row)
         ######
 
-        print("AGENT ID: " + str(self.id) + " " + str(self.id) + " Ex Ante Odds Pred: " + str(self.exAnteOdds))
+        #print("AGENT ID: " + str(self.id) + " " + str(self.id) + " Ex Ante Odds Pred: " + str(self.exAnteOdds))
 
     def getExAnteOrder(self, time, markets):
         for i in range(len(self.exAnteOdds)):
@@ -656,7 +656,7 @@ class Agent_Priveledged(BettingAgent):
                 row.append(odds[i])
             self.oddsData.append(row)
             ##
-            print("AGENT ID: " + str(self.id) + " " + str(self.id) + " In Play Odds Pred: " + str(row))
+            #print("AGENT ID: " + str(self.id) + " " + str(self.id) + " In Play Odds Pred: " + str(row))
             winner = None
             winnerOdds = MAX_ODDS
             for i in range(len(odds)):

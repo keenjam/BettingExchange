@@ -7,17 +7,21 @@ from matplotlib import pyplot
 import pandas as pd
 import csv
 
-from TBBE import Session
+from TBBE import BBE
+from system_constants import NUM_OF_SIMS
 
 # optimiser can be used to optimise a variety of attributes of a bettor
 # in the pursuit of maximising profit;
 # for example, the stake of a bet or the odds to bet at
 
 def parseBalance(agentId):
-    dataframe = pd.read_csv("data/final_balance_" + str(agentId) + ".csv")
-    print(dataframe)
-    finalBalance = dataframe.iloc[0][str(agentId)]
-    print(finalBalance)
+    finalBalance = 0
+    for i in range(NUM_OF_SIMS):
+        dataframe = pd.read_csv("data/final_balance_" + str(i) + "_"+ str(agentId) + ".csv")
+        balance = dataframe.iloc[0][str(agentId)]
+        finalBalance += balance
+
+    finalBalance = finalBalance / NUM_OF_SIMS
     return finalBalance
 
 
@@ -26,12 +30,13 @@ def stakeObjective(agentId, x):
     # change stake of specified betting agent to be candidate stake 'x'
     print("CANDIDATE")
     print(x[0])
-    sess = Session()
-    print(sess.bettingAgents[agentId].stake)
-    sess.bettingAgents[agentId].stake = x[0]
-    print(sess.bettingAgents[agentId].stake)
+    bbe = BBE()
 
-    sess.runSession()
+
+
+    def argFunc(session): session.bettingAgents[agentId].stake = x[0]
+
+    bbe.runSession(argFunc=argFunc)
 
     finalBalance = parseBalance(agentId)
     print(finalBalance)
@@ -41,13 +46,16 @@ def deltaObjective(agentId, x):
     # change stake of specified betting agent to be candidate stake 'x'
     print("CANDIDATE")
     print(x[0])
-    sess = Session()
-    print(sess.bettingAgents[agentId].layDelta)
-    sess.bettingAgents[agentId].backDelta = x[0]
-    sess.bettingAgents[agentId].layDelta = x[0]
-    print(sess.bettingAgents[agentId].layDelta)
+    bbe = BBE()
+    def argFunc(session):
+        session.bettingAgents[agentId].backDelta = x[0]
+        session.bettingAgents[agentId].layDelta = x[0]
 
-    sess.runSession()
+
+    bbe.runSession(argFunc=argFunc)
+    if bbe.session:
+        print(bbe.session.bettingAgents[agentId].backDelta)
+        print(bbe.session.bettingAgents[agentId].layDelta)
 
     finalBalance = parseBalance(agentId)
     print(finalBalance)
@@ -79,11 +87,10 @@ def hillclimbing(agentId, bounds, n_iterations, step_size):
 
 def saveResults(best, score, scores):
     fileName = "optimiser_results.csv"
+
     with open(fileName, 'w', newline = '') as file:
         writer = csv.writer(file)
-        writer.writerow(str(best))
-        writer.writerow(str(score))
-        writer.writerows([scores])
+        writer.writerow(scores)
 
 def optimise(agentId, bounds, n_iterations, step_size):
     # perform the hill climbing search
@@ -99,17 +106,17 @@ def optimise(agentId, bounds, n_iterations, step_size):
     pyplot.ylabel('Evaluation f(x)')
     pyplot.savefig('improvement.png')
     pyplot.show()
-    #saveResults(best, score, scores)
+    saveResults(best, score, scores)
 
 
 def main():
     # id of agent to be optimised
-    agentId = 14
+    agentId = 13
     # define range for input
     stakeBounds = asarray([[1.0, 100.0]])
-    deltaBounds = asarray([[-5.0, 5.0]])
+    deltaBounds = asarray([[-1.5, 1.5]])
     # define the total iterations
-    n_iterations = 1
+    n_iterations = 3000
     # define the maximum step size
     stake_step_size = 1.0
     delta_step_size = 0.1

@@ -104,7 +104,7 @@ def createExAnteOdds(compPool, attributes):
     NUM_OF_PRIV_BETTORS = numOfPriveledgedBettors
     createAdaptedCompPools(compPool, numOfPriveledgedBettors)
     for i in range(numOfPriveledgedBettors):
-        createOdds(i, adaptedCompPools[i], 10)
+        createOdds(i, adaptedCompPools[i], NUM_EX_ANTE_SIMS)
 
 
 
@@ -117,16 +117,16 @@ def createInPlayOdds(numberOfTimesteps):
             break
 
     for t in range(numberOfTimesteps):
-        print(t)
+        # print(t)
         for i in range(numOfPriveledgedBettors):
             raceState = observeRace(t)
             print(raceState)
             pool = deepcopy(adaptedCompPools[i])
 
-            createOdds(i, pool, 10, t, raceState)
+            createOdds(i, pool, NUM_IN_PLAY_SIMS, t, raceState)
 
-    print("INPLAYODDS")
-    print(inPlayOdds)
+    # print("INPLAYODDS")
+    # print(inPlayOdds)
 
 
 

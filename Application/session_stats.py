@@ -28,7 +28,7 @@ def priv_bettor_odds(bettingAgents):
             writer.writerows(b.oddsData)
 
 
-def final_balances(bettingAgents):
+def final_balances(bettingAgents, simId):
     bettors = []
     for id, agent in bettingAgents.items():
         bettors.append(agent)
@@ -42,7 +42,7 @@ def final_balances(bettingAgents):
         data.append(bettors[i].balance)
 
     for b in bettors:
-        fileName = "data/final_balance_" + str(b.id) + ".csv"
+        fileName = "data/final_balance_" + str(simId) + "_" + str(b.id) + ".csv"
         with open(fileName, 'w', newline = '') as file:
             writer = csv.writer(file)
             writer.writerow(header)
@@ -50,6 +50,6 @@ def final_balances(bettingAgents):
 
 
 
-def createstats(bettingAgents):
+def createstats(bettingAgents, simId):
     priv_bettor_odds(bettingAgents)
-    final_balances(bettingAgents)
+    final_balances(bettingAgents, simId)
