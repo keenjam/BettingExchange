@@ -20,7 +20,7 @@ class BettingAgent:
     def __init__(self, id, name, lengthOfRace, endOfInPlayBettingPeriod, exchange = None):
         self.id = id
         self.name = name
-        self.balance = 5000
+        self.balance = 100000000
         self.liability = 0 # Amount that bettor is liable for if bettor lays winner
         self.availableBalance = self.balance
         self.orders = []
@@ -30,6 +30,7 @@ class BettingAgent:
         self.exchange = random.randint(0, NUM_OF_EXCHANGES-1)
         self.endOfInPlayBettingPeriod = endOfInPlayBettingPeriod
         self.bettingPeriod = True
+        self.trades = []
 
         self.stakeLower = 15
         self.stakeHigher = 15
@@ -55,6 +56,7 @@ class BettingAgent:
 
     def bookkeep(self, trade, type, order, time):
         orderType = self
+        self.trades.append(trade)
         self.numOfBets = self.numOfBets - 1
         if type == 'Backer':
             self.amountFromTransactions += trade['stake']
@@ -91,17 +93,18 @@ class Agent_Random(BettingAgent):
             c = random.randint(0, NUM_OF_COMPETITORS-1)
             e = random.randint(0, NUM_OF_EXCHANGES-1)
             b = random.randint(0,1)
+            delta = b = random.randint(-1,1)
             if(b == 0):
                 quoteodds = MIN_ODDS
                 if markets[e][c]['lays']['n'] > 0:
-                    quoteodds = markets[e][c]['lays']['best']
-                    order = Order(e, self.id, c, 'Back', quoteodds, random.randint(self.stakeLower, self.stakeHigher), markets[e][c]['QID'], time)
+                    quoteodds = markets[e][c]['lays']['best'] + delta
+                    order = Order(e, self.id, c, 'Back', min(MAX_ODDS, max(MIN_ODDS, quoteodds)), random.randint(self.stakeLower, self.stakeHigher), markets[e][c]['QID'], time)
                 #print("BACK MADE BY AGENT " + str(self.id))
             else:
                 quoteodds = MAX_ODDS
                 if markets[e][c]['backs']['n'] > 0:
-                    quoteodds = markets[e][c]['backs']['best']
-                    order = Order(e, self.id, c, 'Lay', quoteodds, random.randint(self.stakeLower, self.stakeHigher), markets[e][c]['QID'], time)
+                    quoteodds = markets[e][c]['backs']['best'] + delta
+                    order = Order(e, self.id, c, 'Lay', min(MAX_ODDS, max(MIN_ODDS, quoteodds)), random.randint(self.stakeLower, self.stakeHigher), markets[e][c]['QID'], time)
                 #print("LAY MADE BY AGENT " + str(self.id))
 
         if order != None:
@@ -464,6 +467,7 @@ class Agent_Arbitrage(BettingAgent):
         self.backStake = 100
         self.inProcess = False
         self.ordersCompleted = 0
+        self.orderHistory = []
 
     def getorder(self, time, markets):
         order = None
@@ -505,6 +509,10 @@ class Agent_Arbitrage(BettingAgent):
         # if back odds are 2.06 on exchange 0 and lay odds are 2.0 for same competitor on exchange 1
         # then can back £100 on comp 1
         # and lay (100 * 1.0206) £104.04 on comp 1
+
+
+        if self.inProcess == True:
+            return
 
         competitors = []
         # list of all opportunities, each list item formatted as [(exchange, direction, competitor, odds, stake),(exchange, direction, competitor, odds, stake)]
@@ -554,6 +562,8 @@ class Agent_Arbitrage(BettingAgent):
 
             self.orders.append(backBet)
             self.orders.append(layBet)
+            self.orderHistory.append(backBet)
+            self.orderHistory.append(layBet)
             self.inProcess = True
     #
     # def bookkeep(self, trade, direction, order, time):
@@ -563,7 +573,124 @@ class Agent_Arbitrage(BettingAgent):
     #     self.ordersCompleted = self.ordersCompleted + 1
     #     if self.ordersCompleted % 2 == 0: self.inProcess = False
 
+class Agent_Arbitrage2(BettingAgent):
+    '''
+    exploits opportunities for a garuanteed profit by exploiting the back and
+    lay odds shown on the different exchanges
+    '''
+    def __init__(self, id, name, lengthOfRace, endOfInPlayBettingPeriod):
+        BettingAgent.__init__(self, id, name, lengthOfRace, endOfInPlayBettingPeriod)
+        self.backStake = 100
+        self.inProcess = False
+        self.ordersCompleted = 0
+        self.orderHistory = []
 
+    def getorder(self, time, markets):
+        order = None
+        if len(self.orders) > 0:
+            order = self.orders.pop(0)
+
+
+        if order != None:
+            print(order)
+            print(self.orders)
+
+        return order
+    #
+    #
+    #
+    def respond(self, t, markets, trade):
+
+
+        def calculateArbOpportunities(self, opportunities, competitors):
+            for i in range(len(competitors)):
+                backOdds = competitors[i][0][1]
+                backExchange = competitors[i][0][0]
+                layOdds = competitors[i][2][1]
+                layExchange = competitors[i][2][0]
+
+                if layOdds == backOdds or backExchange == layExchange or layExchange == None or backExchange == None: continue
+
+                potentialBackWinnings = backOdds * self.backStake
+                layStake = potentialBackWinnings / layOdds
+
+                bet = [[backExchange, 'back', i,  backOdds, self.backStake], [layExchange, 'lay', i, layOdds, layStake]]
+                opportunities.append(bet)
+
+            if len(opportunities) < 1: return None
+            else:
+                r = random.randint(0, len(opportunities)-1)
+                return opportunities[r]
+
+
+        # create list of best backs and lays for all competitors available on each exchange
+        # if back odds are 2.06 on exchange 0 and lay odds are 2.0 for same competitor on exchange 1
+        # then can back £100 on comp 1
+        # and lay (100 * 1.0206) £104.04 on comp 1
+
+        if self.inProcess == True:
+            return
+
+        competitors = []
+        # list of all opportunities, each list item formatted as [(exchange, direction, competitor, odds, stake),(exchange, direction, competitor, odds, stake)]
+        opportunities = []
+
+        for c in range(NUM_OF_COMPETITORS):
+            bestBack = (None, 100000)
+            bestLay = (None, -1)
+            worstBack = (None, -1)
+            worstLay = (None, 100000)
+            exchangeData = None
+
+            for e in range(NUM_OF_EXCHANGES):
+                exchange = markets[e]
+                bestBackOnExchange = exchange[c]['backs']['best']
+                bestLayOnExchange = exchange[c]['lays']['best']
+                if bestBackOnExchange != None:
+                    if(bestBackOnExchange < bestBack[1]):
+                        bestBack = (e, bestBackOnExchange)
+                    if(bestBackOnExchange > worstBack[1]):
+                        worstBack = (e, bestBackOnExchange)
+                if bestLayOnExchange != None:
+                    if(bestLayOnExchange > bestLay[1]):
+                        bestLay = (e, bestLayOnExchange)
+                    if(bestLayOnExchange < worstLay[1]):
+                        worstLay = (e, bestLayOnExchange)
+
+            compOdds = [bestBack, worstBack, bestLay, worstLay]
+            competitors.append(compOdds)
+
+        bet = calculateArbOpportunities(self, opportunities, competitors)
+
+        if bet != None and self.inProcess == False:
+            back = bet[0]
+            bExchange = back[0]
+            bCompetitor = back[2]
+            bOdds = back[3]
+            lay = bet[1]
+            lExchange = lay[0]
+            lCompetitor = lay[2]
+            lOdds = lay[3]
+            lStake = lay[4]
+            backBet = Order(bExchange, self.id, bCompetitor, 'Back', bOdds, self.backStake, markets[bExchange][bCompetitor]['QID'], t)
+            layBet = Order(lExchange, self.id, lCompetitor, 'Lay', lOdds, int(lStake), markets[lExchange][lCompetitor]['QID'], time)
+            t1 = time.time()
+
+            for i in range(5):
+                print("BING BING")
+                time.sleep(1)
+
+            stamp = (time.time() - t1) + t
+            print(backBet)
+            backBet.timestamp = stamp
+            layBet.timestamp = stamp
+            print(backBet)
+
+            self.orders.append(backBet)
+            self.orders.append(layBet)
+            self.orderHistory.append(backBet)
+            self.orderHistory.append(layBet)
+            self.inProcess = True
 
 
 
@@ -614,7 +741,7 @@ class Agent_Priveledged(BettingAgent):
         BettingAgent.__init__(self, id, name, lengthOfRace, endOfInPlayBettingPeriod)
         self.exAnteOdds = getExAnteOdds(self.id)
         self.betPreRace = False
-        self.updateInterval = 5
+        self.updateInterval = 1
         self.stake = 10
         self.backDelta = 0.1
         self.layDelta = 0.1

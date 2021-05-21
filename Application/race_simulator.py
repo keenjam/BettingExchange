@@ -280,6 +280,11 @@ class Simulator:
 
         self.numberOfTimesteps = len(self.raceData)
 
+        # append injured to back off finished list
+        for c in self.injuredCompetitors:
+            self.finished.append(c.id)
+
+
         if fn != None: self.writeToFile(fn)
 
 

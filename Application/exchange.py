@@ -139,10 +139,11 @@ class OrderbookHalf:
 
 		del(self.orders[bestOddsCounterparty])
 		if self.market[self.bestOdds][0] == orderStake:
+			self.numOfOrders -= len(self.market[self.bestOdds][1])
 			del(self.market[self.bestOdds])
-
-		self.numOfOrders = self.numOfOrders - 1
-
+		else:
+			self.numOfOrders = self.numOfOrders - 1
+		#
 		# print(self.market)
 		# print(self.numOfOrders)
 		# print(self.orders)
@@ -392,8 +393,9 @@ class Exchange(Orderbook):
 			# if order odds are greater than any lays on the LOB
 			# then just leave unfilled portion of best back on the market
 			else:
-				print("BACK")
-				print("ORDER partially unfilled, stake of " + str(orderStake) + " left on the market")
+				if EXCHANGE_VERBOSE:
+					print("BACK")
+					print("ORDER partially unfilled, stake of " + str(orderStake) + " left on the market")
 
 		if orderDirection == 'Lay':
 			if orderbook.backs.numOfOrders > 0 and bestLay >= bestBack:
@@ -442,8 +444,9 @@ class Exchange(Orderbook):
 						# if order odds are greater than any lays on the LOB
 						# then just leave unfilled portion of best back on the market
 			else:
-				print("LAY")
-				print("ORDER partially unfilled, stake of " + str(orderStake) + " left on the market")
+				if EXCHANGE_VERBOSE:
+					print("LAY")
+					print("ORDER partially unfilled, stake of " + str(orderStake) + " left on the market")
 
 
 

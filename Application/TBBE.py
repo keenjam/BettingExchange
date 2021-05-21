@@ -31,6 +31,11 @@ class Session:
         self.endOfInPlayBettingPeriod = None
         self.winningCompetitor = None
 
+        # Record keeping attributes
+        self.tape = []
+        self.priceRecord = {}
+        self.spreads = {}
+
         self.generateRaceData()
         self.initialiseThreads()
 
@@ -112,6 +117,7 @@ class Session:
             if name == 'Back_Favourite': return Agent_Back_Favourite(id, name, self.lengthOfRace, self.endOfInPlayBettingPeriod)
             if name == 'Linex': return Agent_Linex(id, name, self.lengthOfRace, self.endOfInPlayBettingPeriod)
             if name == 'Arbitrage': return Agent_Arbitrage(id, name, self.lengthOfRace, self.endOfInPlayBettingPeriod)
+            if name == 'Arbitrage2': return Agent_Arbitrage2(id, name, self.lengthOfRace, self.endOfInPlayBettingPeriod)
             if name == 'Priveledged': return Agent_Priveledged(id, name, self.lengthOfRace, self.endOfInPlayBettingPeriod)
 
         id = 0
@@ -205,20 +211,8 @@ class Session:
             self.updateRaceQ(i+1)
             i = i+1
             if TBBE_VERBOSE: print(i)
-            #print(i)
-            # run simulation
-            #race.updateRaceState()
-            #race.saveRaceState(0)
+            print(i)
 
-            # call update function of every betting agent
-            #updateAgents(competitors, agents)
-
-            # for i in range(len(race.competitors)):
-            #     #print(str(race.competitors[i]) + " : " +
-            #          #str(race.competitors[i].distance))
-            #     if(race.competitors[i].distance >= race.race_attributes.length):
-            #        winner = race.competitors[i].id
-            #        print("WINNER: " + str(winner))
 
             time.sleep(1 / SESSION_SPEED_MULTIPLIER)
 
@@ -237,6 +231,7 @@ class Session:
             for orderbook in ex.compOrderbooks:
                 for trade in orderbook.tape:
                     print(trade)
+                    self.tape.append(trade)
 
         # Settle up all transactions over all exchanges
         for id, ex in self.exchanges.items():
@@ -248,7 +243,7 @@ class Session:
         for id, agent in self.bettingAgents.items():
             print("Agent " + str(id) + "\'s final balance: " + str(agent.balance))
 
-        createstats(self.bettingAgents, simulationId)
+        createstats(self.bettingAgents, simulationId, self.tape, self.priceRecord, self.spreads)
 
     def initialiseThreads(self):
         self.initialiseExchanges()
@@ -299,6 +294,9 @@ class BBE(Session):
             if argFunc:
                 argFunc(self.session)
             self.session.eventSession(currentSimulation)
+
+            print(self.session.bettingAgents[23].trades)
+            print(self.session.bettingAgents[24].trades)
 
             currentSimulation = currentSimulation + 1
 
